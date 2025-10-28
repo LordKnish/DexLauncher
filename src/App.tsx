@@ -5,7 +5,7 @@ import { LauncherPage } from "./components/launcher/launcher-page"
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="theme">
       <div className="h-screen overflow-clip">
         <Menu />
         <div className="h-[calc(100vh-40px)]">

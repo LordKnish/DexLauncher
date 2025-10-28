@@ -15,6 +15,7 @@ interface VersionData {
       installed: boolean
       isBeta: boolean
       announcement: string
+      changelogUrl?: string
       changelog: {
         categories: Array<{
           name: string
@@ -81,6 +82,23 @@ export function LauncherPage() {
     }, 200)
   }
 
+  const handleUpdate = () => {
+    console.log("Updating:", selectedGame, selectedVersion)
+    setInstallationStatus("downloading")
+    // TODO: Call Tauri command to update
+    
+    // Simulate progress
+    let currentProgress = 0
+    const interval = setInterval(() => {
+      currentProgress += 5
+      setProgress(currentProgress)
+      if (currentProgress >= 100) {
+        clearInterval(interval)
+        setInstallationStatus("installed")
+      }
+    }, 200)
+  }
+
   const handleDelete = () => {
     console.log("Deleting installation:", selectedGame, selectedVersion)
     setInstallationStatus("not_installed")
@@ -106,6 +124,7 @@ export function LauncherPage() {
 
   const currentGame = versionData.games.find((g) => g.id === selectedGame)
   const currentVersionData = currentGame?.versions.find((v) => v.version === selectedVersion)
+  const isLatestVersion = currentGame?.versions[0].version === selectedVersion
 
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--launcher-bg))]">
@@ -131,6 +150,7 @@ export function LauncherPage() {
               version={selectedVersion}
               status={installationStatus}
               progress={progress}
+              isLatestVersion={isLatestVersion}
               statusMessage={
                 installationStatus === "downloading"
                   ? "Downloading files..."
@@ -142,6 +162,7 @@ export function LauncherPage() {
               }
               onLaunch={handleLaunch}
               onInstall={handleInstall}
+              onUpdate={handleUpdate}
               onDelete={handleDelete}
               onCancel={handleCancel}
             />

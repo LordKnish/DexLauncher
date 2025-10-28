@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { Settings, FolderOpen, HelpCircle } from "lucide-react"
+import { Settings, FolderOpen, HelpCircle, Github } from "lucide-react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 
 import {
@@ -28,6 +28,10 @@ export function Menu() {
   const openGameFolder = useCallback(() => {
     console.log("Opening game folder...")
     // TODO: Implement open game folder
+  }, [])
+
+  const openGitHubIssue = useCallback(() => {
+    window.open("https://github.com/Aegide/infinite-fusion-public/issues/new", "_blank")
   }, [])
 
   const startDragging = useCallback(async (e: React.MouseEvent) => {
@@ -69,19 +73,6 @@ export function Menu() {
         </MenubarMenu>
 
         <MenubarMenu>
-          <MenubarTrigger>View</MenubarTrigger>
-          <MenubarContent>
-            <MenubarItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Preferences
-            </MenubarItem>
-            <MenubarSeparator />
-            <MenubarItem>Changelog</MenubarItem>
-            <MenubarItem>Game Logs</MenubarItem>
-          </MenubarContent>
-        </MenubarMenu>
-
-        <MenubarMenu>
           <MenubarTrigger>Help</MenubarTrigger>
           <Dialog modal={false}>
             <MenubarContent>
@@ -89,17 +80,21 @@ export function Menu() {
                 <MenubarItem>About DexLauncher</MenubarItem>
               </DialogTrigger>
               <MenubarSeparator />
-              <MenubarItem>
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Documentation
+              <MenubarItem onClick={openGitHubIssue}>
+                <Github className="mr-2 h-4 w-4" />
+                Report Issue
               </MenubarItem>
-              <MenubarItem>Report Issue</MenubarItem>
             </MenubarContent>
             <AboutDialog />
           </Dialog>
         </MenubarMenu>
 
-          <MenuModeToggle />
+        <MenubarMenu>
+          <MenubarTrigger>Theme</MenubarTrigger>
+          <MenubarContent>
+            <MenuModeToggle />
+          </MenubarContent>
+        </MenubarMenu>
         </Menubar>
       </div>
       <WindowControls />

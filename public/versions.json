@@ -11,6 +11,7 @@
           "installed": false,
           "isBeta": false,
           "announcement": "Update 6.7 is now available!! Legendary Mode, Revamped Elite 4 rematches, PC Boxes improvements, French Translation, and more!",
+          "changelogUrl": "https://github.com/Aegide/infinite-fusion-public/releases/tag/6.7",
           "changelog": {
             "categories": [
               {
@@ -67,6 +68,7 @@
           "installed": true,
           "isBeta": false,
           "announcement": "Shinies now finally have their official colors, along with a bunch of other cool stuff!",
+          "changelogUrl": "https://github.com/Aegide/infinite-fusion-public/releases/tag/6.6",
           "changelog": {
             "categories": [
               {
@@ -103,6 +105,7 @@
           "installed": false,
           "isBeta": false,
           "announcement": "Double hats, new looks for gym leaders, and a bunch of bug fixes.",
+          "changelogUrl": "https://github.com/Aegide/infinite-fusion-public/releases/tag/6.5",
           "changelog": {
             "categories": [
               {
@@ -142,6 +145,7 @@
           "installed": false,
           "isBeta": false,
           "announcement": "30 new Pokémon, full trainer customization, and a ton of new side content.",
+          "changelogUrl": "https://github.com/Aegide/infinite-fusion-public/releases/tag/6.4",
           "changelog": {
             "categories": [
               {

@@ -18,8 +18,10 @@ interface InstallationCardProps {
   status: InstallationStatus
   progress?: number
   statusMessage?: string
+  isLatestVersion?: boolean
   onLaunch?: () => void
   onInstall?: () => void
+  onUpdate?: () => void
   onDelete?: () => void
   onCancel?: () => void
   className?: string
@@ -30,8 +32,10 @@ export function InstallationCard({
   status,
   progress = 0,
   statusMessage,
+  isLatestVersion = true,
   onLaunch,
   onInstall,
+  onUpdate,
   onDelete,
   onCancel,
   className,
@@ -102,14 +106,24 @@ export function InstallationCard({
                 <Rocket className="mr-2 h-5 w-5" />
                 Launch Game
               </Button>
+              {!isLatestVersion && onUpdate && (
+                <Button
+                  size="lg"
+                  className="flex-1 bg-gradient-pokemon text-lg font-bold uppercase shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+                  onClick={onUpdate}
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Update
+                </Button>
+              )}
               <Button
                 size="lg"
                 variant="outline"
                 className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={onDelete}
+                title="Delete installation"
               >
-                <Trash2 className="mr-2 h-5 w-5" />
-                Delete
+                <Trash2 className="h-5 w-5" />
               </Button>
             </>
           )}
