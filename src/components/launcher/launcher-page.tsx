@@ -41,11 +41,18 @@ export function LauncherPage() {
       .then((res) => res.json())
       .then((data: VersionData) => {
         setVersionData(data)
-        // Set initial selected version to the latest
-        if (data.games.length > 0 && data.games[0].versions.length > 0) {
-          const latestVersion = data.games[0].versions[0]
-          setSelectedVersion(latestVersion.version)
-          setInstallationStatus(latestVersion.installed ? "installed" : "not_installed")
+        // Set initial selected game to the first game
+        if (data.games.length > 0) {
+          const firstGame = data.games[0]
+          setSelectedGame(firstGame.id)
+          
+          // Set initial selected version to the installed version, or first version if none installed
+          if (firstGame.versions.length > 0) {
+            const installedVersion = firstGame.versions.find((v) => v.installed)
+            const versionToSelect = installedVersion ? installedVersion.version : firstGame.versions[0].version
+            setSelectedVersion(versionToSelect)
+            setInstallationStatus(installedVersion ? "installed" : "not_installed")
+          }
         }
       })
       .catch((err) => console.error("Failed to load version data:", err))
@@ -56,6 +63,14 @@ export function LauncherPage() {
     setSelectedVersion(version)
     // Check if this version is installed
     const game = versionData?.games.find((g) => g.id === gameId)
+    const versionInfo = game?.versions.find((v) => v.version === version)
+    setInstallationStatus(versionInfo?.installed ? "installed" : "not_installed")
+  }
+
+  const handleVersionSelectFromCard = (version: string) => {
+    setSelectedVersion(version)
+    // Check if this version is installed
+    const game = versionData?.games.find((g) => g.id === selectedGame)
     const versionInfo = game?.versions.find((v) => v.version === version)
     setInstallationStatus(versionInfo?.installed ? "installed" : "not_installed")
   }
@@ -148,6 +163,7 @@ export function LauncherPage() {
             {/* Installation Card */}
             <InstallationCard
               version={selectedVersion}
+              versions={currentGame?.versions || []}
               status={installationStatus}
               progress={progress}
               isLatestVersion={isLatestVersion}
@@ -165,6 +181,7 @@ export function LauncherPage() {
               onUpdate={handleUpdate}
               onDelete={handleDelete}
               onCancel={handleCancel}
+              onVersionSelect={handleVersionSelectFromCard}
             />
 
             {/* Changelog */}

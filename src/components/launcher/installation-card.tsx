@@ -1,9 +1,19 @@
-import { Rocket, Trash2, Download, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { Rocket, Trash2, Download, Loader2, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { VersionSelector } from "./version-selector"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 type InstallationStatus =
   | "not_installed"
@@ -13,8 +23,16 @@ type InstallationStatus =
   | "installed"
   | "error"
 
+interface Version {
+  version: string
+  installed: boolean
+  isBeta?: boolean
+  date?: string
+}
+
 interface InstallationCardProps {
   version: string
+  versions: Version[]
   status: InstallationStatus
   progress?: number
   statusMessage?: string
@@ -24,11 +42,13 @@ interface InstallationCardProps {
   onUpdate?: () => void
   onDelete?: () => void
   onCancel?: () => void
+  onVersionSelect?: (version: string) => void
   className?: string
 }
 
 export function InstallationCard({
   version,
+  versions,
   status,
   progress = 0,
   statusMessage,
@@ -38,8 +58,10 @@ export function InstallationCard({
   onUpdate,
   onDelete,
   onCancel,
+  onVersionSelect,
   className,
 }: InstallationCardProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const isInstalled = status === "installed"
   const isInstalling =
     status === "downloading" || status === "extracting" || status === "verifying"
@@ -48,21 +70,52 @@ export function InstallationCard({
   return (
     <Card className={cn("animate-fade-in-up backdrop-blur-sm", className)}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl">
-            Pokémon Infinite Fusion{" "}
-            <span className="font-mono text-[hsl(var(--fusion-purple))]">
-              v{version}
-            </span>
-          </CardTitle>
-          {isInstalled && (
-            <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/30">
-              ✓ Installed
-            </Badge>
-          )}
-          {hasError && (
-            <Badge variant="destructive">Error</Badge>
-          )}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            {onVersionSelect && (
+              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Game Settings</DialogTitle>
+                    <DialogDescription>
+                      Select a version to play
+                    </DialogDescription>
+                  </DialogHeader>
+                  <VersionSelector
+                    versions={versions}
+                    currentVersion={version}
+                    onVersionSelect={(v) => {
+                      onVersionSelect(v)
+                      setSettingsOpen(false)
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+            <CardTitle className="text-2xl">
+              Pokémon Infinite Fusion
+            </CardTitle>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            {isInstalled && (
+              <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/30">
+                ✓ Installed
+              </Badge>
+            )}
+            {hasError && (
+              <Badge variant="destructive">Error</Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
