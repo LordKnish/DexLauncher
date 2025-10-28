@@ -34,4 +34,24 @@ src-tauri/WixTools
 *.deb
 *.AppImage
 
+# Cline docs (keep in repo for documentation)
 cline_docs/*
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Download cache
+*.part
+*.zip.part
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
+src-tauri/build_output.txt
