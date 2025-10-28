@@ -3,6 +3,7 @@
 import { useCallback } from "react"
 import { Settings, FolderOpen, HelpCircle, Github } from "lucide-react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
+import { open as openUrl } from "@tauri-apps/plugin-shell"
 
 import {
   Menubar,
@@ -31,8 +32,8 @@ export function Menu() {
     // TODO: Implement open game folder
   }, [])
 
-  const openGitHubIssue = useCallback(() => {
-    window.open("https://github.com/Aegide/infinite-fusion-public/issues/new", "_blank")
+  const openGitHubIssue = useCallback(async () => {
+    await openUrl("https://github.com/Aegide/infinite-fusion-public/issues/new")
   }, [])
 
   const startDragging = useCallback(async (e: React.MouseEvent) => {

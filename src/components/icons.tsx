@@ -41,6 +41,17 @@ export const Icons = {
       />
     )
   },
+  text_logo: (props: LucideProps) => {
+    const { className } = props
+    return (
+      <img
+        src="/src-tauri/icons/Text_Logo.png"
+        alt="Logo"
+        className={className}
+        style={{ display: 'inline-block' }}
+      />
+    )
+  },
   close: X,
   spinner: Loader2,
   chevronLeft: ChevronLeft,

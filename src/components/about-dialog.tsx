@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { UpdateIcon } from "@radix-ui/react-icons"
 import { getVersion } from "@tauri-apps/api/app"
 import { GithubIcon, HomeIcon } from "lucide-react"
+import { open as openUrl } from "@tauri-apps/plugin-shell"
 
 import { Icons } from "./icons"
 import { Button, buttonVariants } from "./ui/button"
@@ -22,15 +23,18 @@ export function AboutDialog() {
     getVersion().then((v) => setVersion(v))
   }, [])
 
+  const openGitHub = useCallback(async () => {
+    await openUrl("https://github.com/LordKnish/DexLauncher")
+  }, [])
+
   return (
     <DialogContent className="overflow-clip pb-2">
       <DialogHeader className="flex items-center text-center">
         <div className="rounded-full bg-background p-[6px] text-slate-600 drop-shadow-none transition duration-1000 hover:text-slate-800 hover:drop-shadow-[0_0px_10px_rgba(0,10,50,0.50)] dark:hover:text-slate-400 ">
-          <Icons.logo className="h-12 w-12" />
+          <Icons.text_logo className="h-12 w-34" />
         </div>
 
         <DialogTitle className="flex flex-col items-center gap-2 pt-2">
-          DexLauncher
           <span className="flex gap-1 font-mono text-xs font-medium">
             Version {version}
           </span>
@@ -44,14 +48,13 @@ export function AboutDialog() {
       </DialogHeader>
       <DialogFooter className="flex flex-row items-center border-t pt-2 text-slate-400">
         <div className="mr-auto flex flex-row gap-2">
-          <a
-            href="https://github.com/infinitefusion/infinitefusion-e18"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={openGitHub}
             className="transition hover:text-slate-300"
+            type="button"
           >
             <GithubIcon className="h-5 w-5" />
-          </a>
+          </button>
         </div>
 
         <Button

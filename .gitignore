@@ -33,3 +33,5 @@ src-tauri/WixTools
 *.dmg
 *.deb
 *.AppImage
+
+cline_docs/*

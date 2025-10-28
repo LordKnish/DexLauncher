@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { open as openUrl } from "@tauri-apps/plugin-shell"
 import { Sidebar } from "./sidebar"
 import { HeroBanner } from "./hero-banner"
 import { InstallationCard } from "./installation-card"
@@ -141,6 +142,13 @@ export function LauncherPage() {
   const currentVersionData = currentGame?.versions.find((v) => v.version === selectedVersion)
   const isLatestVersion = currentGame?.versions[0].version === selectedVersion
 
+  const handleViewFullChangelog = useCallback(async () => {
+    const changelogUrl = currentVersionData?.changelogUrl
+    if (changelogUrl) {
+      await openUrl(changelogUrl)
+    }
+  }, [currentVersionData])
+
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--launcher-bg))]">
       {/* Sidebar */}
@@ -194,10 +202,7 @@ export function LauncherPage() {
                   category: cat.name,
                   changes: cat.changes,
                 }))}
-                onViewFull={() => {
-                  console.log("Opening full changelog...")
-                  // TODO: Open full changelog in browser or dialog
-                }}
+                onViewFull={handleViewFullChangelog}
               />
             )}
           </div>
