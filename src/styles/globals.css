@@ -94,6 +94,10 @@
     --launcher-bg: 240 15% 20%;
   }
 
+  .light * {
+    color-scheme: light;
+  }
+
   .dark {
     --background: 240 15% 6%;
     --foreground: 240 5% 96%;
@@ -135,6 +139,10 @@
     
     --sidebar-bg: 240 10% 12%;
     --launcher-bg: 240 15% 6%;
+  }
+
+  .dark * {
+    color-scheme: dark;
   }
 }
 

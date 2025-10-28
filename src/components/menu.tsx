@@ -89,7 +89,7 @@ export function Menu() {
           <MenuModeToggle />
         </Menubar>
         <div
-          className="flex-1 cursor-move h-10"
+          className="flex-1 cursor-move h-full"
           onMouseDown={startDragging}
         />
       </div>
