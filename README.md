@@ -1,7 +1,8 @@
 
-![# DexLauncher](https://github.com/LordKnish/DexLauncher/blob/main/src-tauri/icons/Text_Logo.png?raw=true)
-A modern, cross-platform launcher for Pokemon fan games built with Tauri and React.
+# DexLauncher
 ![enter image description here](https://i.imgur.com/bUzeVHg.png)
+
+A modern, cross-platform launcher for Pokemon fan games built with Tauri and React.
 ## Features
 
 - 🎮 **Multi-Game Support** - Designed to support multiple Pokemon fan games
