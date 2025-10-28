@@ -1,0 +1,197 @@
+{
+  "games": [
+    {
+      "id": "pokemon-infinite-fusion",
+      "name": "Pokemon Infinite Fusion",
+      "logo": "/logo.png",
+      "versions": [
+        {
+          "version": "6.7",
+          "date": "2025-09-28",
+          "installed": false,
+          "isBeta": false,
+          "announcement": "Update 6.7 is now available!! Legendary Mode, Revamped Elite 4 rematches, PC Boxes improvements, French Translation, and more!",
+          "changelog": {
+            "categories": [
+              {
+                "name": "New Game mode and french translation",
+                "changes": [
+                  "Added \"Legendary mode\" game mode unlockable with new game+",
+                  "Every trainer Pokemon is fused with a legendary",
+                  "Added built-in french translation (Thanks @Anthony 📛, @Frog's dusty basement door, @Willi)",
+                  "Added \"mixed generations\" as a custom starter option"
+                ]
+              },
+              {
+                "name": "Elite Four rematches",
+                "changes": [
+                  "Reworked the Elite 4 rooms, including a completely remade champion room (Thanks @Kiwi)",
+                  "Added a new Pokémon league rematch system with multiple difficulty tiers",
+                  "Trainer AI now uses healing items more intelligently"
+                ]
+              },
+              {
+                "name": "PC boxes improvements",
+                "changes": [
+                  "Added multi-select mode in PC boxes enabled by pressing Shift (Adapted from KurayMod - Thanks @Sylvi)",
+                  "Selected Pokémon can be sorted with various criteria",
+                  "Improved fusing from the PC"
+                ]
+              },
+              {
+                "name": "Quality of life gameplay improvements",
+                "changes": [
+                  "Added option to relearn moves directly from the party screen",
+                  "Made it possible to throw Pokéballs when battling more than 1 Pokémon"
+                ]
+              },
+              {
+                "name": "Cosmetic stuff",
+                "changes": [
+                  "Added Wallpaper Lottery to unlock new PC Wallpapers",
+                  "Made it possible to flip hats placed on Pokémon horizontally and vertically"
+                ]
+              },
+              {
+                "name": "Bug Fixes",
+                "changes": [
+                  "Various bugfixes (thanks @FauxBlue)"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "version": "6.6",
+          "date": "2025-07-06",
+          "installed": true,
+          "isBeta": false,
+          "announcement": "Shinies now finally have their official colors, along with a bunch of other cool stuff!",
+          "changelog": {
+            "categories": [
+              {
+                "name": "Gameplay",
+                "changes": [
+                  "Improved shinies (massive thanks to @Anthony 📛)",
+                  "Shiny Pokémon now use their official shiny colors",
+                  "Shiny colors are now given through full palette swaps instead of simple hue shifts",
+                  "Pokémon icons now appear shiny in the PC and party screen",
+                  "Quest NPCs and NPCs offering trades now appear with a marker over their head",
+                  "Added an option to Fuse/Unfuse Pokémon directly from the party screen",
+                  "Added Flying and Dark type experts",
+                  "Added a game option to allow alt sprites to be randomly selected when encountering new Pokemon",
+                  "Clothes shop menus now use different colors to identify city exclusive outfits and regional outfits",
+                  "Added more character customization options",
+                  "Added more custom Pokédex entries"
+                ]
+              },
+              {
+                "name": "Graphics and menus",
+                "changes": [
+                  "Overworld flowers and beach shores are now animated",
+                  "Added new loading screen images",
+                  "Long spriter credits can now be displayed on multiple lines (thanks @FauxBlue)",
+                  "Battle menu cursor now automatically goes back to \"Fight\" option after switching Pokémon"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "version": "6.5",
+          "date": "2024-21-12",
+          "installed": false,
+          "isBeta": false,
+          "announcement": "Double hats, new looks for gym leaders, and a bunch of bug fixes.",
+          "changelog": {
+            "categories": [
+              {
+                "name": "Character customization",
+                "changes": [
+                  "Added 24 new hats, 11 new clothes and 9 new hairstyle options",
+                  "Made it possible to wear two hats at once",
+                  "Added new hairstyles in the Saffron City boutique",
+                  "Added Dye Kit items; Dyeing clothes and hats is now done through the outfits menu once you have the items"
+                ]
+              },
+              {
+                "name": "Gameplay",
+                "changes": [
+                  "Added an item to set favorite outfits and quickly switch to them",
+                  "Changed the Meloetta obtained at the end of the \"Legendary Band\" questline into a Meloetta (A) / Meloetta (P) fusion",
+                  "Spriter NPCs that sometimes appear in the Art Gallery now all have a unique randomized appearance",
+                  "Updated the overworld and battle sprites for several gym leaders and NPCs",
+                  "Fusions now play the cry from both base Pokémon"
+                ]
+              },
+              {
+                "name": "System",
+                "changes": [
+                  "Added an option for toggling Custom Egg sprites",
+                  "Changed the game's loading screen",
+                  "The game now prompts players to download new spritepacks when they are released",
+                  "Fight option is now automatically selected after switching a Pokémon in battles"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "version": "6.4",
+          "date": "2025-02-01",
+          "installed": false,
+          "isBeta": false,
+          "announcement": "30 new Pokémon, full trainer customization, and a ton of new side content.",
+          "changelog": {
+            "categories": [
+              {
+                "name": "Pokémon",
+                "changes": [
+                  "Added 31 new Pokémon (including form changes)",
+                  "Added a triple fusion of the Kalos starters",
+                  "Updated Remix mode teams (Thanks funkytomate)"
+                ]
+              },
+              {
+                "name": "Character customization",
+                "changes": [
+                  "Added various hats, clothes, hairstyles that the player can wear",
+                  "129 hats, 79 clothes, 66 hairstyles (4 base colors each)",
+                  "Added the ability to put hats on Pokémon",
+                  "Added customizable trainer cards"
+                ]
+              },
+              {
+                "name": "Quests / Game events",
+                "changes": [
+                  "Added the ability to join Team Rocket, along with several Team Rocket sidequests",
+                  "Added Pinkan Island heist event",
+                  "Added new quests to obtain some of the new Pokémon",
+                  "Added special \"type expert\" npc battles scattered throughout Kanto"
+                ]
+              },
+              {
+                "name": "UI",
+                "changes": [
+                  "Updated the game's intro screen graphics (thanks doctormiawoo)",
+                  "Increased fast text speed option's speed",
+                  "Clicking empty spots in the town map now snaps the cursor to the nearest Fly spot",
+                  "Added a prompt for registering registerable key items when obtaining them",
+                  "Added option for displaying the opponent's Pokémon type in battles"
+                ]
+              },
+              {
+                "name": "System",
+                "changes": [
+                  "Sprites are now loaded from spritesheets instead of individual sprites",
+                  "Saving the game now creates backup savefiles",
+                  "Various bugfixes"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
