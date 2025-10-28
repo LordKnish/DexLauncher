@@ -128,6 +128,15 @@ export function LauncherPage() {
     setProgress(0)
   }
 
+  const handleViewFullChangelog = useCallback(async () => {
+    const game = versionData?.games.find((g) => g.id === selectedGame)
+    const version = game?.versions.find((v) => v.version === selectedVersion)
+    const changelogUrl = version?.changelogUrl
+    if (changelogUrl) {
+      await openUrl(changelogUrl)
+    }
+  }, [versionData, selectedGame, selectedVersion])
+
   if (!versionData) {
     return (
       <div className="flex h-screen items-center justify-center bg-[hsl(var(--launcher-bg))]">
@@ -141,13 +150,6 @@ export function LauncherPage() {
   const currentGame = versionData.games.find((g) => g.id === selectedGame)
   const currentVersionData = currentGame?.versions.find((v) => v.version === selectedVersion)
   const isLatestVersion = currentGame?.versions[0].version === selectedVersion
-
-  const handleViewFullChangelog = useCallback(async () => {
-    const changelogUrl = currentVersionData?.changelogUrl
-    if (changelogUrl) {
-      await openUrl(changelogUrl)
-    }
-  }, [currentVersionData])
 
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--launcher-bg))]">

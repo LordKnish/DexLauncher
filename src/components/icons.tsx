@@ -34,7 +34,7 @@ export const Icons = {
     const { className } = props
     return (
       <img
-        src="/src-tauri/icons/StoreLogo.png"
+        src="/src-tauri/icons/Symbol_Logo.png"
         alt="Logo"
         className={className}
         style={{ display: 'inline-block' }}
