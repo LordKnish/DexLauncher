@@ -1,9 +1,55 @@
 import { useState, useEffect, useCallback } from "react"
+import { invoke } from "@tauri-apps/api/core"
+import { listen } from "@tauri-apps/api/event"
 import { open as openUrl } from "@tauri-apps/plugin-shell"
 import { Sidebar } from "./sidebar"
 import { HeroBanner } from "./hero-banner"
 import { InstallationCard } from "./installation-card"
 import { Changelog } from "./changelog"
+import { InstallDirectoryDialog } from "./install-directory-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+// Tauri backend types
+interface Installation {
+  id: number
+  game_id: string
+  version: string
+  install_path: string
+  installed_at: string
+  last_played: string | null
+  size_bytes: number | null
+  integrity_hash: string | null
+  is_valid: boolean
+}
+
+interface InstallProgress {
+  operation_id: string
+  phase: string
+  percentage: number
+  message: string
+}
+
+interface InstallComplete {
+  installation_id: number
+  game_id: string
+  version: string
+  install_path: string
+}
+
+interface InstallError {
+  operation_id: string
+  error: string
+  can_retry: boolean
+}
 
 interface VersionData {
   games: Array<{
@@ -29,35 +75,108 @@ interface VersionData {
 
 export function LauncherPage() {
   const [versionData, setVersionData] = useState<VersionData | null>(null)
+  const [installations, setInstallations] = useState<Installation[]>([])
   const [selectedGame, setSelectedGame] = useState("pokemon-infinite-fusion")
   const [selectedVersion, setSelectedVersion] = useState("6.7")
+  const [currentInstallationId, setCurrentInstallationId] = useState<number | null>(null)
   const [installationStatus, setInstallationStatus] = useState<
     "not_installed" | "downloading" | "extracting" | "verifying" | "installed" | "error"
   >("not_installed")
   const [progress, setProgress] = useState(0)
+  const [statusMessage, setStatusMessage] = useState<string>("")
+  const [currentOperationId, setCurrentOperationId] = useState<string | null>(null)
+  const [showInstallDialog, setShowInstallDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [pendingInstallVersion, setPendingInstallVersion] = useState<string>("")
 
-  // Load version data from JSON
+  // Load installations from database
+  const loadInstallations = useCallback(async () => {
+    try {
+      const installs = await invoke<Installation[]>("get_installations")
+      setInstallations(installs)
+      
+      // Check if current game/version is installed
+      const currentInstall = installs.find(
+        (i) => i.game_id === selectedGame && i.version === selectedVersion
+      )
+      
+      if (currentInstall) {
+        setCurrentInstallationId(currentInstall.id)
+        setInstallationStatus("installed")
+      } else {
+        setCurrentInstallationId(null)
+        setInstallationStatus("not_installed")
+      }
+    } catch (err) {
+      console.error("Failed to load installations:", err)
+    }
+  }, [selectedGame, selectedVersion])
+
+  // Load version data from JSON and installations from database
   useEffect(() => {
+    // Load version data
     fetch("/versions.json")
       .then((res) => res.json())
       .then((data: VersionData) => {
         setVersionData(data)
-        // Set initial selected game to the first game
         if (data.games.length > 0) {
           const firstGame = data.games[0]
           setSelectedGame(firstGame.id)
           
-          // Set initial selected version to the installed version, or first version if none installed
           if (firstGame.versions.length > 0) {
-            const installedVersion = firstGame.versions.find((v) => v.installed)
-            const versionToSelect = installedVersion ? installedVersion.version : firstGame.versions[0].version
-            setSelectedVersion(versionToSelect)
-            setInstallationStatus(installedVersion ? "installed" : "not_installed")
+            setSelectedVersion(firstGame.versions[0].version)
           }
         }
       })
       .catch((err) => console.error("Failed to load version data:", err))
+
+    // Load installations
+    loadInstallations()
   }, [])
+
+  // Reload installations when game/version changes
+  useEffect(() => {
+    loadInstallations()
+  }, [selectedGame, selectedVersion, loadInstallations])
+
+  // Listen for installation progress events
+  useEffect(() => {
+    const unlistenProgress = listen<InstallProgress>("install-progress", (event) => {
+      const { phase, percentage, message } = event.payload
+      setProgress(Math.round(percentage))
+      setStatusMessage(message)
+      
+      if (phase === "downloading") {
+        setInstallationStatus("downloading")
+      } else if (phase === "extracting") {
+        setInstallationStatus("extracting")
+      } else if (phase === "verifying") {
+        setInstallationStatus("verifying")
+      }
+    })
+
+    const unlistenComplete = listen<InstallComplete>("install-complete", (event) => {
+      setInstallationStatus("installed")
+      setProgress(100)
+      setStatusMessage("Installation complete!")
+      setCurrentInstallationId(event.payload.installation_id)
+      setCurrentOperationId(null)
+      // Reload installations
+      loadInstallations()
+    })
+
+    const unlistenError = listen<InstallError>("install-error", (event) => {
+      setInstallationStatus("error")
+      setStatusMessage(event.payload.error)
+      setCurrentOperationId(null)
+    })
+
+    return () => {
+      unlistenProgress.then((fn) => fn())
+      unlistenComplete.then((fn) => fn())
+      unlistenError.then((fn) => fn())
+    }
+  }, [loadInstallations])
 
   const handleVersionSelect = (gameId: string, version: string) => {
     setSelectedGame(gameId)
@@ -76,56 +195,103 @@ export function LauncherPage() {
     setInstallationStatus(versionInfo?.installed ? "installed" : "not_installed")
   }
 
-  const handleLaunch = () => {
-    console.log("Launching game:", selectedGame, selectedVersion)
-    // TODO: Call Tauri command to launch game
+  const handleLaunch = async () => {
+    if (currentInstallationId === null) {
+      console.error("No installation ID")
+      return
+    }
+
+    try {
+      await invoke("launch_game", { installationId: currentInstallationId })
+    } catch (err) {
+      console.error("Failed to launch game:", err)
+      setInstallationStatus("error")
+      setStatusMessage(`Failed to launch: ${err}`)
+    }
   }
 
   const handleInstall = () => {
-    console.log("Installing:", selectedGame, selectedVersion)
-    setInstallationStatus("downloading")
-    // TODO: Call Tauri command to install
-    
-    // Simulate progress
-    let currentProgress = 0
-    const interval = setInterval(() => {
-      currentProgress += 5
-      setProgress(currentProgress)
-      if (currentProgress >= 100) {
-        clearInterval(interval)
-        setInstallationStatus("installed")
-      }
-    }, 200)
+    // Show installation directory dialog
+    setPendingInstallVersion(selectedVersion)
+    setShowInstallDialog(true)
   }
 
-  const handleUpdate = () => {
-    console.log("Updating:", selectedGame, selectedVersion)
-    setInstallationStatus("downloading")
-    // TODO: Call Tauri command to update
-    
-    // Simulate progress
-    let currentProgress = 0
-    const interval = setInterval(() => {
-      currentProgress += 5
-      setProgress(currentProgress)
-      if (currentProgress >= 100) {
-        clearInterval(interval)
-        setInstallationStatus("installed")
-      }
-    }, 200)
+  const handleInstallConfirm = async (
+    installPath: string,
+    createStartMenu: boolean,
+    createDesktop: boolean
+  ) => {
+    try {
+      // Generate operation ID
+      const operationId = `install-${selectedGame}-${pendingInstallVersion}-${Date.now()}`
+      setCurrentOperationId(operationId)
+      setInstallationStatus("downloading")
+      setProgress(0)
+      setStatusMessage("Preparing installation...")
+
+      // Start installation
+      const installationId = await invoke<number>("install_game", {
+        operationId,
+        gameId: selectedGame,
+        version: pendingInstallVersion,
+        installPath,
+        createStartMenu,
+        createDesktop,
+      })
+
+      console.log("Installation started with ID:", installationId)
+    } catch (err) {
+      console.error("Failed to install:", err)
+      setInstallationStatus("error")
+      setStatusMessage(`Installation failed: ${err}`)
+      setCurrentOperationId(null)
+    }
+  }
+
+  const handleUpdate = async () => {
+    // For now, update is the same as install (git pull)
+    await handleInstall()
   }
 
   const handleDelete = () => {
-    console.log("Deleting installation:", selectedGame, selectedVersion)
-    setInstallationStatus("not_installed")
-    setProgress(0)
-    // TODO: Call Tauri command to delete
+    // Show confirmation dialog
+    setShowDeleteDialog(true)
   }
 
-  const handleCancel = () => {
-    console.log("Cancelling installation...")
+  const handleDeleteConfirm = async () => {
+    if (currentInstallationId === null) {
+      console.error("No installation ID")
+      return
+    }
+
+    try {
+      await invoke("delete_installation", { installationId: currentInstallationId })
+      setInstallationStatus("not_installed")
+      setProgress(0)
+      setCurrentInstallationId(null)
+      setStatusMessage("")
+      // Reload installations
+      await loadInstallations()
+    } catch (err) {
+      console.error("Failed to delete installation:", err)
+      setStatusMessage(`Failed to delete: ${err}`)
+    }
+  }
+
+  const handleCancel = async () => {
+    if (currentOperationId) {
+      try {
+        await invoke("cancel_operation", { operationId: currentOperationId })
+        console.log("Cancellation requested for:", currentOperationId)
+      } catch (err) {
+        console.error("Failed to cancel:", err)
+      }
+    }
+    
     setInstallationStatus("not_installed")
     setProgress(0)
+    setCurrentOperationId(null)
+    setStatusMessage("")
   }
 
   const handleViewFullChangelog = useCallback(async () => {
@@ -177,15 +343,7 @@ export function LauncherPage() {
               status={installationStatus}
               progress={progress}
               isLatestVersion={isLatestVersion}
-              statusMessage={
-                installationStatus === "downloading"
-                  ? "Downloading files..."
-                  : installationStatus === "extracting"
-                    ? "Extracting files..."
-                    : installationStatus === "verifying"
-                      ? "Verifying installation..."
-                      : undefined
-              }
+              statusMessage={statusMessage || undefined}
               onLaunch={handleLaunch}
               onInstall={handleInstall}
               onUpdate={handleUpdate}
@@ -210,6 +368,33 @@ export function LauncherPage() {
           </div>
         </div>
       </div>
+
+      {/* Installation Directory Dialog */}
+      <InstallDirectoryDialog
+        open={showInstallDialog}
+        onOpenChange={setShowInstallDialog}
+        gameName={currentGame?.name || "Pokemon Infinite Fusion"}
+        onConfirm={handleInstallConfirm}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Installation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Pokemon Infinite Fusion? This will remove all game files and shortcuts.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
