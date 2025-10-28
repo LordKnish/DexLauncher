@@ -72,7 +72,8 @@ export function Sidebar({
               <div className="flex items-center gap-2 px-2 mb-2">
                 <button
                   onClick={() => toggleGameExpanded(game.id)}
-                  className="flex items-center gap-2 flex-1 rounded-lg px-2 py-2 hover:bg-muted transition-colors"
+                  className="flex items-center justify-center p-2 hover:bg-muted transition-colors rounded"
+                  title="Expand/collapse versions"
                 >
                   <ChevronDown
                     className={cn(
@@ -80,6 +81,12 @@ export function Sidebar({
                       isExpanded ? "rotate-0" : "-rotate-90"
                     )}
                   />
+                </button>
+                <button
+                  onClick={() => handleGameNameClick(game.id)}
+                  className="flex items-center gap-2 flex-1 rounded-lg px-2 py-2 hover:bg-muted transition-colors"
+                  title="Go to latest installed version"
+                >
                   <img src={game.logo} alt={game.name} className="h-5 w-5" />
                   <span className="text-sm font-semibold text-foreground truncate">
                     {game.name}
