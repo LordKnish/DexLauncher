@@ -45,7 +45,7 @@ Build a modern, cross-platform launcher for Pokémon Infinite Fusion with a beau
 - [ ] Update progress indicator
 - [ ] Status messages and error display
 - [ ] Settings panel
-- [ ] Theme support (light/dark)
+- [x] Theme support (light/dark)
 
 ### Infrastructure
 - [ ] GitHub Releases API integration

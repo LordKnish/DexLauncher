@@ -1,24 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { LaptopIcon, MoonIcon, SunIcon } from "@radix-ui/react-icons"
+import { LaptopIcon, MoonIcon, SunIcon, CheckIcon } from "@radix-ui/react-icons"
 import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   MenubarContent,
+  MenubarItem,
   MenubarMenu,
-  MenubarRadioGroup,
-  MenubarRadioItem,
+  MenubarSeparator,
   MenubarTrigger,
 } from "@/components/ui/menubar"
-import { Icons } from "@/components/icons"
 
 export function MenuModeToggle() {
   const { setTheme, theme } = useTheme()
@@ -27,20 +19,28 @@ export function MenuModeToggle() {
     <MenubarMenu>
       <MenubarTrigger>Theme</MenubarTrigger>
       <MenubarContent forceMount>
-        <MenubarRadioGroup value={theme}>
-          <MenubarRadioItem value="light" onClick={() => setTheme("light")}>
+        <MenubarItem onClick={() => setTheme("light")} className="flex items-center justify-between">
+          <div className="flex items-center">
             <SunIcon className="mr-2 h-4 w-4" />
             <span>Light</span>
-          </MenubarRadioItem>
-          <MenubarRadioItem value="dark" onClick={() => setTheme("dark")}>
+          </div>
+          {theme === "light" && <CheckIcon className="ml-2 h-4 w-4" />}
+        </MenubarItem>
+        <MenubarItem onClick={() => setTheme("dark")} className="flex items-center justify-between">
+          <div className="flex items-center">
             <MoonIcon className="mr-2 h-4 w-4" />
             <span>Dark</span>
-          </MenubarRadioItem>
-          <MenubarRadioItem value="system" onClick={() => setTheme("system")}>
+          </div>
+          {theme === "dark" && <CheckIcon className="ml-2 h-4 w-4" />}
+        </MenubarItem>
+        <MenubarSeparator />
+        <MenubarItem onClick={() => setTheme("system")} className="flex items-center justify-between">
+          <div className="flex items-center">
             <LaptopIcon className="mr-2 h-4 w-4" />
             <span>System</span>
-          </MenubarRadioItem>
-        </MenubarRadioGroup>
+          </div>
+          {theme === "system" && <CheckIcon className="ml-2 h-4 w-4" />}
+        </MenubarItem>
       </MenubarContent>
     </MenubarMenu>
   )
