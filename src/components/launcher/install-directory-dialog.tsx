@@ -33,13 +33,37 @@ export function InstallDirectoryDialog({
   const [installPath, setInstallPath] = useState(defaultPath)
   const [createStartMenu, setCreateStartMenu] = useState(true)
   const [createDesktop, setCreateDesktop] = useState(true)
+  const [repositorySize, setRepositorySize] = useState<number | null>(null)
+  const [loadingSize, setLoadingSize] = useState(false)
 
-  // Reset to default when dialog opens
+  // Fetch repository size when dialog opens
   useEffect(() => {
     if (open) {
       setInstallPath(defaultPath)
+      setLoadingSize(true)
+      invoke<number>("get_repository_size")
+        .then((size) => {
+          setRepositorySize(size)
+        })
+        .catch((err) => {
+          console.error("Failed to fetch repository size:", err)
+          setRepositorySize(null)
+        })
+        .finally(() => {
+          setLoadingSize(false)
+        })
     }
   }, [open, defaultPath])
+
+  // Format bytes to human-readable size
+  const formatSize = (bytes: number) => {
+    const gb = bytes / (1024 * 1024 * 1024)
+    const mb = bytes / (1024 * 1024)
+    if (gb >= 1) {
+      return `${gb.toFixed(2)} GB`
+    }
+    return `${mb.toFixed(0)} MB`
+  }
 
   const handleBrowse = async () => {
     try {
@@ -128,7 +152,14 @@ export function InstallDirectoryDialog({
           {/* Size Info */}
           <div className="rounded-lg bg-muted p-3 text-sm">
             <p className="text-muted-foreground">
-              <span className="font-semibold">Size required:</span> ~1.5 GB
+              <span className="font-semibold">Size required:</span>{" "}
+              {loadingSize ? (
+                "Loading..."
+              ) : repositorySize ? (
+                formatSize(repositorySize)
+              ) : (
+                "~1.5 GB"
+              )}
             </p>
           </div>
         </div>

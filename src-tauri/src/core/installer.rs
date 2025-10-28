@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 use serde::{Deserialize, Serialize};
 
-use crate::core::{Downloader, Extractor, GitHubApi, GameLauncher, Verifier};
+use crate::core::{Downloader, Extractor, GitHubApi, GameLauncher, Verifier, GitInstaller, GitHubRepo};
 use crate::db::DbState;
 use crate::error::{LauncherError, Result};
 use crate::utils::{ProgressTracker, get_dir_size};
@@ -66,99 +66,30 @@ impl Installer {
         // Create GitHub API client
         let github = GitHubApi::new("infinitefusion", "infinitefusion-e18")?;
         
-        // Get download URL for the releases branch archive
+        // Get download URL for releases branch archive
         let download_url = github.get_branch_archive_url("releases");
         tracing::info!("Download URL: {}", download_url);
 
-        // Create downloader
-        let downloader = Downloader::new()?;
+        // Fetch repository size from GitHub API
+        tracing::info!("Fetching repository size from GitHub API...");
+        let repo_size = github.get_repository_info().await.ok();
+        if let Some(size) = repo_size {
+            tracing::info!("Expected download size: {:.2} MB", size as f64 / 1_048_576.0);
+        }
 
-        // Create progress tracker for download
-        let download_progress = Arc::new(ProgressTracker::new(operation_id.clone(), 0));
-        let download_progress_clone = Arc::clone(&download_progress);
+        // Create git installer
+        let git_installer = GitInstaller::new(
+            GitHubRepo::new("infinitefusion", "infinitefusion-e18", "releases"),
+            self.app_handle.clone()
+        );
 
-        // Spawn progress emitter task
-        let app_handle = self.app_handle.clone();
-        let op_id = operation_id.clone();
-        tokio::spawn(async move {
-            loop {
-                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                
-                let current = download_progress_clone.current();
-                let total = download_progress_clone.total();
-                
-                if total > 0 {
-                    let percentage = ((current as f64 / total as f64) * 70.0).round(); // Download is 0-70%
-                    let mb_current = current as f64 / 1_048_576.0;
-                    let mb_total = total as f64 / 1_048_576.0;
-                    
-                    let _ = app_handle.emit("install-progress", InstallProgress {
-                        operation_id: op_id.clone(),
-                        phase: "downloading".to_string(),
-                        percentage,
-                        message: format!("Downloading: {:.1} MB / {:.1} MB ({}%)",
-                            mb_current, mb_total, percentage as i32),
-                    });
-                }
-                
-                if current >= total && total > 0 {
-                    break;
-                }
-            }
-        });
-
-        // Download the archive
-        let archive_path = install_path.with_extension("zip");
-        self.emit_progress(&operation_id, "downloading", 5.0, "Downloading game archive from GitHub...")?;
-        
-        tracing::info!("Downloading archive to: {}", archive_path.display());
-        
-        downloader
-            .download_with_resume(&download_url, &archive_path, Some(download_progress))
+        // Install using git (includes submodules)
+        // Git installation handles everything: clone, fetch, reset, submodules
+        git_installer
+            .install_or_update(&install_path, &operation_id)
             .await?;
         
-        tracing::info!("Archive download complete, preparing extraction...");
-
-        // Emit extraction phase
-        self.emit_progress(&operation_id, "extracting", 70.0, "Extracting files...")?;
-
-        // Create extraction progress tracker
-        let extract_progress = Arc::new(ProgressTracker::new(operation_id.clone(), 0));
-        let extract_progress_clone = Arc::clone(&extract_progress);
-
-        // Spawn extraction progress emitter
-        let app_handle = self.app_handle.clone();
-        let op_id = operation_id.clone();
-        tokio::spawn(async move {
-            loop {
-                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-                
-                let current = extract_progress_clone.current();
-                let total = extract_progress_clone.total();
-                
-                if total > 0 {
-                    let percentage = (70.0 + (current as f64 / total as f64) * 20.0).round(); // Extraction is 70-90%
-                    
-                    let _ = app_handle.emit("install-progress", InstallProgress {
-                        operation_id: op_id.clone(),
-                        phase: "extracting".to_string(),
-                        percentage,
-                        message: format!("Extracting: {} / {} files ({}%)",
-                            current, total, percentage as i32),
-                    });
-                }
-                
-                if current >= total && total > 0 {
-                    break;
-                }
-            }
-        });
-
-        // Extract the archive
-        Extractor::extract_zip(&archive_path, &install_path, Some(extract_progress)).await?;
-
-        // Delete the archive file
-        tokio::fs::remove_file(&archive_path).await?;
+        tracing::info!("Git installation complete!");
 
         // Emit verification phase
         self.emit_progress(&operation_id, "verifying", 90.0, "Verifying installation...")?;

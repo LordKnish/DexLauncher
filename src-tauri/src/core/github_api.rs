@@ -157,6 +157,45 @@ impl GitHubApi {
             self.owner, self.repo, branch
         )
     }
+
+    /// Get repository information including size
+    pub async fn get_repository_info(&self) -> Result<u64> {
+        let url = format!(
+            "https://api.github.com/repos/{}/{}",
+            self.owner, self.repo
+        );
+
+        tracing::info!("Fetching repository info from: {}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| LauncherError::GitHub(format!("Failed to fetch repo info: {}", e)))?;
+
+        if !response.status().is_success() {
+            return Err(LauncherError::GitHub(format!(
+                "GitHub API returned status: {}",
+                response.status()
+            )));
+        }
+
+        let repo_info: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| LauncherError::GitHub(format!("Failed to parse repo info: {}", e)))?;
+
+        // Get repository size in KB, convert to bytes
+        let size_kb = repo_info["size"]
+            .as_u64()
+            .ok_or_else(|| LauncherError::GitHub("Repository size not found".to_string()))?;
+        
+        let size_bytes = size_kb * 1024;
+        tracing::info!("Repository size: {:.2} MB ({} bytes)", size_bytes as f64 / 1_048_576.0, size_bytes);
+        
+        Ok(size_bytes)
+    }
 }
 
 /// Default Pokemon Infinite Fusion GitHub API client

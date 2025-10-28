@@ -11,11 +11,20 @@ pub struct AppState {
     pub db: Arc<DbState>,
 }
 
-/// Check system requirements (no longer needs git!)
+/// Check system requirements (git is now required for submodule support)
 #[tauri::command]
 pub async fn check_system_ready() -> std::result::Result<bool, String> {
-    // Always ready - we use HTTP downloads now, no git required
-    Ok(true)
+    use crate::core::github::GitInstaller;
+    
+    // Check if git is available
+    let git_available = GitInstaller::is_git_available();
+    
+    if !git_available {
+        return Err("Git is required but not found on this system. Please install Git and restart the launcher.".to_string());
+    }
+    
+    tracing::info!("Git is available: {}", git_available);
+    Ok(git_available)
 }
 
 /// Get all installations
@@ -156,4 +165,17 @@ pub async fn cancel_operation(
     // TODO: Implement actual cancellation logic
     // For now, just log it - the frontend will handle UI state
     Ok(())
+}
+
+/// Get repository size from GitHub API
+#[tauri::command]
+pub async fn get_repository_size() -> std::result::Result<u64, String> {
+    use crate::core::GitHubApi;
+    
+    let github = GitHubApi::new("infinitefusion", "infinitefusion-e18")
+        .map_err(|e| e.to_string())?;
+    
+    github.get_repository_info()
+        .await
+        .map_err(|e| e.to_string())
 }

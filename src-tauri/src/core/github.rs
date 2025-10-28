@@ -1,7 +1,9 @@
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::io::{BufRead, BufReader};
 use crate::error::{LauncherError, Result};
-use crate::utils::ProgressTracker;
+use crate::core::installer::InstallProgress;
+use tauri::Emitter;
 
 /// GitHub repository information
 pub struct GitHubRepo {
@@ -29,19 +31,36 @@ impl GitHubRepo {
 /// Git-based installer (matches old INSTALL_OR_UPDATE.bat behavior)
 pub struct GitInstaller {
     repo: GitHubRepo,
+    app_handle: tauri::AppHandle,
 }
 
 impl GitInstaller {
     /// Create a new git installer
-    pub fn new(repo: GitHubRepo) -> Self {
-        Self { repo }
+    pub fn new(repo: GitHubRepo, app_handle: tauri::AppHandle) -> Self {
+        Self { repo, app_handle }
+    }
+
+    /// Emit progress event to frontend
+    fn emit_progress(&self, operation_id: &str, phase: &str, percentage: f64, message: &str) -> Result<()> {
+        let progress = InstallProgress {
+            operation_id: operation_id.to_string(),
+            phase: phase.to_string(),
+            percentage,
+            message: message.to_string(),
+        };
+
+        self.app_handle
+            .emit("install-progress", progress)
+            .map_err(|e| LauncherError::General(format!("Failed to emit progress: {}", e)))?;
+
+        Ok(())
     }
 
     /// Install or update game using git
     pub async fn install_or_update(
         &self,
         install_path: &PathBuf,
-        progress: Option<ProgressTracker>,
+        operation_id: &str,
     ) -> Result<()> {
         // Ensure install directory exists
         std::fs::create_dir_all(install_path)?;
@@ -52,10 +71,10 @@ impl GitInstaller {
 
         if is_existing {
             // Update existing installation
-            self.update_existing(install_path, progress).await
+            self.update_existing(install_path, operation_id).await
         } else {
             // Fresh installation
-            self.fresh_install(install_path, progress).await
+            self.fresh_install(install_path, operation_id).await
         }
     }
 
@@ -63,48 +82,53 @@ impl GitInstaller {
     async fn fresh_install(
         &self,
         install_path: &PathBuf,
-        progress: Option<ProgressTracker>,
+        operation_id: &str,
     ) -> Result<()> {
-        if let Some(ref p) = progress {
-            p.update(10);
-        }
+        self.emit_progress(operation_id, "downloading", 10.0, "Initializing git repository...")?;
 
         // Initialize git repository
         tracing::info!("Initializing git repository...");
-        self.run_git_command(install_path, &["init", "."])?;
+        self.run_git_command(install_path, &["init", "."], operation_id, 0, 0)?;
 
-        if let Some(ref p) = progress {
-            p.update(20);
-        }
+        self.emit_progress(operation_id, "downloading", 20.0, "Adding remote origin...")?;
 
         // Add remote
         tracing::info!("Adding remote origin...");
         let remote_url = self.repo.clone_url();
-        self.run_git_command(install_path, &["remote", "add", "origin", &remote_url])?;
+        self.run_git_command(install_path, &["remote", "add", "origin", &remote_url], operation_id, 0, 0)?;
 
-        if let Some(ref p) = progress {
-            p.update(30);
-        }
+        self.emit_progress(operation_id, "downloading", 30.0, "Fetching from GitHub...")?;
 
         // Fetch with depth=1 for efficiency (this is the slow part)
         tracing::info!("Fetching from GitHub (this may take a few minutes)...");
         self.run_git_command(
             install_path,
             &["fetch", "--depth=1", "origin", &self.repo.branch, "--progress"],
+            operation_id,
+            30,
+            80,
         )?;
 
-        if let Some(ref p) = progress {
-            p.update(80);
-        }
+        self.emit_progress(operation_id, "downloading", 80.0, "Applying files...")?;
 
         // Reset to fetched branch
         tracing::info!("Applying files...");
         let reset_ref = format!("origin/{}", self.repo.branch);
-        self.run_git_command(install_path, &["reset", "--hard", &reset_ref])?;
+        self.run_git_command(install_path, &["reset", "--hard", &reset_ref], operation_id, 0, 0)?;
 
-        if let Some(ref p) = progress {
-            p.update(100);
-        }
+        self.emit_progress(operation_id, "downloading", 85.0, "Initializing submodules...")?;
+
+        // Initialize and update submodules
+        tracing::info!("Initializing submodules...");
+        self.run_git_command(
+            install_path,
+            &["submodule", "update", "--init", "--recursive", "--progress"],
+            operation_id,
+            85,
+            95,
+        )?;
+
+        self.emit_progress(operation_id, "downloading", 95.0, "Installation complete!")?;
 
         tracing::info!("Installation complete!");
         Ok(())
@@ -114,7 +138,7 @@ impl GitInstaller {
     async fn update_existing(
         &self,
         install_path: &PathBuf,
-        progress: Option<ProgressTracker>,
+        operation_id: &str,
     ) -> Result<()> {
         // Clean up shallow lock if it exists
         let shallow_lock = install_path.join(".git").join("shallow.lock");
@@ -122,60 +146,161 @@ impl GitInstaller {
             let _ = std::fs::remove_file(&shallow_lock);
         }
 
-        if let Some(ref p) = progress {
-            p.update(20);
-        }
+        self.emit_progress(operation_id, "downloading", 20.0, "Fetching updates from GitHub...")?;
 
         // Fetch latest changes (this is the slow part)
         tracing::info!("Fetching updates from GitHub (this may take a few minutes)...");
         self.run_git_command(
             install_path,
             &["fetch", "--depth=1", "origin", &self.repo.branch, "--progress"],
+            operation_id,
+            20,
+            70,
         )?;
 
-        if let Some(ref p) = progress {
-            p.update(70);
-        }
+        self.emit_progress(operation_id, "downloading", 70.0, "Applying updates...")?;
 
         // Reset to latest
         tracing::info!("Applying updates...");
         let reset_ref = format!("origin/{}", self.repo.branch);
-        self.run_git_command(install_path, &["reset", "--hard", &reset_ref])?;
+        self.run_git_command(install_path, &["reset", "--hard", &reset_ref], operation_id, 0, 0)?;
 
-        if let Some(ref p) = progress {
-            p.update(100);
-        }
+        self.emit_progress(operation_id, "downloading", 75.0, "Updating submodules...")?;
+
+        // Update submodules
+        tracing::info!("Updating submodules...");
+        self.run_git_command(
+            install_path,
+            &["submodule", "update", "--init", "--recursive", "--progress"],
+            operation_id,
+            75,
+            95,
+        )?;
+
+        self.emit_progress(operation_id, "downloading", 95.0, "Update complete!")?;
 
         tracing::info!("Update complete!");
         Ok(())
     }
 
-    /// Run a git command
-    fn run_git_command(&self, cwd: &PathBuf, args: &[&str]) -> Result<String> {
+    /// Run a git command with optional progress tracking
+    fn run_git_command(
+        &self,
+        cwd: &PathBuf,
+        args: &[&str],
+        operation_id: &str,
+        start_progress: u64,
+        end_progress: u64,
+    ) -> Result<String> {
         tracing::debug!("Running git command: git {}", args.join(" "));
         
-        let output = Command::new("git")
-            .args(args)
-            .current_dir(cwd)
-            .output()
-            .map_err(|e| {
-                tracing::error!("Failed to execute git command: {}", e);
-                LauncherError::Installation(format!("Failed to run git command: {}", e))
-            })?;
+        // If progress tracking is enabled (start != end), spawn with piped stderr
+        if start_progress != end_progress {
+            let mut child = Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .map_err(|e| {
+                    tracing::error!("Failed to execute git command: {}", e);
+                    LauncherError::Installation(format!("Failed to run git command: {}", e))
+                })?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            tracing::error!("Git command failed. Stderr: {}, Stdout: {}", stderr, stdout);
-            return Err(LauncherError::Installation(format!(
-                "Git command failed: {}",
-                stderr
-            )));
+            // Read stderr for progress updates
+            if let Some(stderr) = child.stderr.take() {
+                let reader = BufReader::new(stderr);
+                let mut last_percentage = 0u64;
+                
+                for line in reader.lines() {
+                    if let Ok(line) = line {
+                        tracing::debug!("Git: {}", line);
+                        
+                        // Parse progress from git output (e.g., "Receiving objects: 10% (1024/10240)")
+                        if let Some(percentage) = Self::parse_git_progress(&line) {
+                            // Only emit if percentage changed (avoid spam)
+                            if percentage != last_percentage {
+                                last_percentage = percentage;
+                                
+                                // Map git's 0-100% to our start-end range
+                                let mapped_progress = start_progress + 
+                                    ((end_progress - start_progress) * percentage / 100);
+                                
+                                // Create clean status message based on what git is doing
+                                let status_message = if line.contains("Receiving objects") {
+                                    format!("Downloading files: {}%", percentage)
+                                } else if line.contains("Resolving deltas") {
+                                    format!("Processing files: {}%", percentage)
+                                } else if line.contains("Compressing objects") {
+                                    format!("Preparing download: {}%", percentage)
+                                } else if line.contains("Counting objects") {
+                                    format!("Counting objects: {}%", percentage)
+                                } else {
+                                    format!("Progress: {}%", percentage)
+                                };
+                                
+                                // Emit progress event with clean message
+                                let _ = self.emit_progress(
+                                    operation_id,
+                                    "downloading",
+                                    mapped_progress as f64,
+                                    &status_message
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            let output = child.wait_with_output()
+                .map_err(|e| LauncherError::Installation(format!("Failed to wait for git: {}", e)))?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                tracing::error!("Git command failed: {}", stderr);
+                return Err(LauncherError::Installation(format!("Git command failed: {}", stderr)));
+            }
+
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            // No progress tracking - use simple output capture
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .output()
+                .map_err(|e| {
+                    tracing::error!("Failed to execute git command: {}", e);
+                    LauncherError::Installation(format!("Failed to run git command: {}", e))
+                })?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                tracing::error!("Git command failed. Stderr: {}, Stdout: {}", stderr, stdout);
+                return Err(LauncherError::Installation(format!(
+                    "Git command failed: {}",
+                    stderr
+                )));
+            }
+
+            let result = String::from_utf8_lossy(&output.stdout).to_string();
+            tracing::debug!("Git command output: {}", result);
+            Ok(result)
         }
+    }
 
-        let result = String::from_utf8_lossy(&output.stdout).to_string();
-        tracing::debug!("Git command output: {}", result);
-        Ok(result)
+    /// Parse git progress percentage from output line
+    fn parse_git_progress(line: &str) -> Option<u64> {
+        // Look for patterns like "Receiving objects: 10%" or "Resolving deltas: 50%"
+        if let Some(pos) = line.find('%') {
+            // Search backwards from % to find the number
+            let before_percent = &line[..pos];
+            if let Some(last_space) = before_percent.rfind(|c: char| !c.is_numeric()) {
+                let num_str = &before_percent[last_space + 1..];
+                return num_str.parse::<u64>().ok();
+            }
+        }
+        None
     }
 
     /// Check if git is available

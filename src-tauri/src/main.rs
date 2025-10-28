@@ -41,6 +41,7 @@ fn main() {
             commands::set_setting,
             commands::get_all_settings,
             commands::cancel_operation,
+            commands::get_repository_size,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
