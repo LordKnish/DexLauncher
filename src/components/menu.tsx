@@ -89,12 +89,7 @@ export function Menu() {
           </Dialog>
         </MenubarMenu>
 
-        <MenubarMenu>
-          <MenubarTrigger>Theme</MenubarTrigger>
-          <MenubarContent>
-            <MenuModeToggle />
-          </MenubarContent>
-        </MenubarMenu>
+        <MenuModeToggle />
         </Menubar>
       </div>
       <WindowControls />
