@@ -6,7 +6,6 @@ A modern, cross-platform launcher for Pokemon fan games built with Tauri and Rea
 ## Features
 
 - 🎮 **Multi-Game Support** - Designed to support multiple Pokemon fan games
-- 🎨 **Modern UI** - Fenix-inspired design with Pokemon-themed colors
 - 📦 **Version Management** - Easy installation and switching between game versions
 - 📝 **Changelog Display** - View detailed release notes for each version
 - 🌙 **Dark Theme** - Optimized dark mode with gradient accents
