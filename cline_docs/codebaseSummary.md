@@ -251,6 +251,7 @@ Defined in [`globals.css`](../src/styles/globals.css):
 5. **Capabilities System** - Set up permissions for window controls
 6. **Light Mode Implementation** - Added complete light mode with CSS variables and theme selector
 7. **Theme Selector Fixed** - Replaced MenubarRadioItem with MenubarItem for proper functionality
+8. **Menu Drag Handler Fixed** - Separated drag region from menu items to prevent interference with clicks
 
 ## Known Issues
 
