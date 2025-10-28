@@ -42,57 +42,55 @@ export function Menu() {
   }, [])
 
   return (
-    <div className="flex items-center justify-between border-b bg-background">
-      <div className="flex items-center flex-1">
-        <Menubar className="rounded-none border-none pl-2 lg:pl-3 flex-1">
-          <MenubarMenu>
-            <div className="inline-flex h-fit w-fit items-center">
-              <img src="/src-tauri/icons/shard.png" alt="DexLauncher" className="h-5 w-5" />
-            </div>
-          </MenubarMenu>
+    <div className="flex items-center justify-between border-b bg-background h-10">
+      <Menubar className="rounded-none border-none pl-2 lg:pl-3">
+        <MenubarMenu>
+          <div className="inline-flex h-fit w-fit items-center">
+            <img src="/src-tauri/icons/shard.png" alt="DexLauncher" className="h-5 w-5" />
+          </div>
+        </MenubarMenu>
 
-          <MenubarMenu>
-            <MenubarTrigger className="font-bold">File</MenubarTrigger>
+        <MenubarMenu>
+          <MenubarTrigger className="font-bold">File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={openGameFolder}>
+              <FolderOpen className="mr-2 h-4 w-4" />
+              Open Game Folder
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem>
+              Settings <MenubarShortcut>Ctrl+,</MenubarShortcut>
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onClick={closeWindow}>
+              Exit <MenubarShortcut>Alt+F4</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        <MenubarMenu>
+          <MenubarTrigger>Help</MenubarTrigger>
+          <Dialog modal={false}>
             <MenubarContent>
-              <MenubarItem onClick={openGameFolder}>
-                <FolderOpen className="mr-2 h-4 w-4" />
-                Open Game Folder
-              </MenubarItem>
+              <DialogTrigger asChild>
+                <MenubarItem>About DexLauncher</MenubarItem>
+              </DialogTrigger>
               <MenubarSeparator />
-              <MenubarItem>
-                Settings <MenubarShortcut>Ctrl+,</MenubarShortcut>
-              </MenubarItem>
-              <MenubarSeparator />
-              <MenubarItem onClick={closeWindow}>
-                Exit <MenubarShortcut>Alt+F4</MenubarShortcut>
+              <MenubarItem onClick={openGitHubIssue}>
+                <Github className="mr-2 h-4 w-4" />
+                Report Issue
               </MenubarItem>
             </MenubarContent>
-          </MenubarMenu>
+            <AboutDialog />
+          </Dialog>
+        </MenubarMenu>
 
-          <MenubarMenu>
-            <MenubarTrigger>Help</MenubarTrigger>
-            <Dialog modal={false}>
-              <MenubarContent>
-                <DialogTrigger asChild>
-                  <MenubarItem>About DexLauncher</MenubarItem>
-                </DialogTrigger>
-                <MenubarSeparator />
-                <MenubarItem onClick={openGitHubIssue}>
-                  <Github className="mr-2 h-4 w-4" />
-                  Report Issue
-                </MenubarItem>
-              </MenubarContent>
-              <AboutDialog />
-            </Dialog>
-          </MenubarMenu>
-
-          <MenuModeToggle />
-        </Menubar>
-        <div
-          className="flex-1 cursor-move h-full"
-          onMouseDown={startDragging}
-        />
-      </div>
+        <MenuModeToggle />
+      </Menubar>
+      <div
+        className="flex-1 cursor-move h-10"
+        onMouseDown={startDragging}
+      />
       <WindowControls />
     </div>
   )

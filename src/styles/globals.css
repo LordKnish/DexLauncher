@@ -90,8 +90,9 @@
     --fusion-purple: 258 90% 66%;
     --fusion-pink: 330 81% 60%;
     
-    --sidebar-bg: 240 10% 15%;
-    --launcher-bg: 240 15% 20%;
+    /* Light mode specific backgrounds */
+    --sidebar-bg: 240 10% 95%;
+    --launcher-bg: 240 10% 98%;
   }
 
   .light * {
