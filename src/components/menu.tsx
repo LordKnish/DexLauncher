@@ -18,6 +18,7 @@ import { AboutDialog } from "./about-dialog"
 import { MenuModeToggle } from "./menu-mode-toggle"
 import { WindowControls } from "./window-controls"
 import { Dialog, DialogTrigger } from "./ui/dialog"
+import { Icons } from "./icons"
 
 export function Menu() {
   const closeWindow = useCallback(async () => {
@@ -46,7 +47,7 @@ export function Menu() {
       <Menubar className="rounded-none border-none pl-2 lg:pl-3">
         <MenubarMenu>
           <div className="inline-flex h-fit w-fit items-center">
-            <img src="/src-tauri/icons/shard.png" alt="DexLauncher" className="h-5 w-5" />
+            <Icons.logo className="h-5 w-5" />
           </div>
         </MenubarMenu>
 
