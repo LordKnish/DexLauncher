@@ -175,7 +175,7 @@ impl LauncherUpdater {
 
     /// Start background update checker (runs every 6 hours)
     pub fn start_background_checker(app_handle: AppHandle) {
-        tokio::spawn(async move {
+        tauri::async_runtime::spawn(async move {
             let updater = LauncherUpdater::new(app_handle.clone());
             
             // Initial check after 30 seconds
