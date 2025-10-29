@@ -17,6 +17,12 @@ pub enum LauncherError {
     Config(String),
     /// GitHub API errors
     GitHub(String),
+    /// Git operation errors
+    Git(String),
+    /// Not found errors
+    NotFound(String),
+    /// Operation cancelled
+    Cancelled,
     /// General errors
     General(String),
 }
@@ -31,6 +37,9 @@ impl fmt::Display for LauncherError {
             LauncherError::Verification(msg) => write!(f, "Verification error: {}", msg),
             LauncherError::Config(msg) => write!(f, "Configuration error: {}", msg),
             LauncherError::GitHub(msg) => write!(f, "GitHub API error: {}", msg),
+            LauncherError::Git(msg) => write!(f, "Git error: {}", msg),
+            LauncherError::NotFound(msg) => write!(f, "Not found: {}", msg),
+            LauncherError::Cancelled => write!(f, "Operation cancelled"),
             LauncherError::General(msg) => write!(f, "{}", msg),
         }
     }
@@ -72,6 +81,12 @@ impl From<zip::result::ZipError> for LauncherError {
 impl From<serde_json::Error> for LauncherError {
     fn from(err: serde_json::Error) -> Self {
         LauncherError::Config(format!("JSON error: {}", err))
+    }
+}
+
+impl From<curl::Error> for LauncherError {
+    fn from(err: curl::Error) -> Self {
+        LauncherError::Network(format!("Curl error: {}", err))
     }
 }
 

@@ -4,6 +4,7 @@
       "id": "pokemon-infinite-fusion",
       "name": "Pokemon Infinite Fusion",
       "logo": "/logo.png",
+      "save_files_path": "%APPDATA%\\infinitefusion",
       "versions": [
         {
           "version": "6.7",

@@ -1,15 +1,21 @@
 pub mod github;
 pub mod github_api;
 pub mod downloader;
+pub mod download_manager;
 pub mod extractor;
 pub mod verifier;
 pub mod installer;
 pub mod launcher;
+pub mod operation_manager;
+pub mod updater;
 
 pub use github::*;
 pub use github_api::*;
 pub use downloader::*;
+pub use download_manager::*;
 pub use extractor::*;
 pub use verifier::*;
 pub use installer::*;
 pub use launcher::*;
+pub use operation_manager::*;
+pub use updater::*;

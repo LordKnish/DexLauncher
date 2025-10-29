@@ -2,13 +2,17 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
-use crate::core::Installer;
+use crate::core::{Installer, OperationManager, Updater, Verifier, VerificationMode};
 use crate::db::{DbState, Installation};
 use crate::utils::{get_disk_space, DiskSpaceInfo, is_system_directory, validate_install_path};
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 /// Application state
 pub struct AppState {
     pub db: Arc<DbState>,
+    pub operation_manager: OperationManager,
 }
 
 /// Check system requirements (git is now required for submodule support)
@@ -159,12 +163,16 @@ pub async fn get_all_settings(
 /// Cancel an ongoing operation
 #[tauri::command]
 pub async fn cancel_operation(
+    state: State<'_, AppState>,
     operation_id: String,
 ) -> std::result::Result<(), String> {
     tracing::info!("Cancelling operation: {}", operation_id);
-    // TODO: Implement actual cancellation logic
-    // For now, just log it - the frontend will handle UI state
-    Ok(())
+    let cancelled = state.operation_manager.cancel_operation(&operation_id).await;
+    if cancelled {
+        Ok(())
+    } else {
+        Err(format!("Operation {} not found or already completed", operation_id))
+    }
 }
 
 /// Get repository size from GitHub API
@@ -178,4 +186,155 @@ pub async fn get_repository_size() -> std::result::Result<u64, String> {
     github.get_repository_info()
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Check for updates for an installation
+#[tauri::command]
+pub async fn check_for_updates(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    installation_id: i64,
+) -> std::result::Result<crate::core::updater::UpdateInfo, String> {
+    let updater = Updater::new(Arc::clone(&state.db), app);
+    updater
+        .check_for_updates(installation_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Update a game installation
+#[tauri::command]
+pub async fn update_game(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    operation_id: String,
+    installation_id: i64,
+) -> std::result::Result<(), String> {
+    let updater = Updater::new(Arc::clone(&state.db), app);
+    let cancel_token = state.operation_manager.register_operation(operation_id.clone()).await;
+    
+    let result = updater
+        .update_game(operation_id.clone(), installation_id, cancel_token)
+        .await;
+    
+    state.operation_manager.unregister_operation(&operation_id).await;
+    result.map_err(|e| e.to_string())
+}
+
+/// Verify installation integrity
+#[tauri::command]
+pub async fn verify_installation(
+    state: State<'_, AppState>,
+    installation_id: i64,
+    full_check: bool,
+) -> std::result::Result<crate::core::verifier::VerificationReport, String> {
+    let verifier = Verifier::new(Arc::clone(&state.db));
+    let mode = if full_check {
+        VerificationMode::Full
+    } else {
+        VerificationMode::Quick
+    };
+    
+    verifier
+        .verify_installation(installation_id, mode)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Repair corrupted installation files
+#[tauri::command]
+pub async fn repair_installation(
+    state: State<'_, AppState>,
+    installation_id: i64,
+    corrupted_files: Vec<String>,
+) -> std::result::Result<usize, String> {
+    let verifier = Verifier::new(Arc::clone(&state.db));
+    verifier
+        .repair_installation(installation_id, corrupted_files)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Expand environment variables in a path string
+#[tauri::command]
+pub fn expand_path(path: String) -> std::result::Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        // Expand Windows environment variables like %APPDATA%
+        let expanded = shellexpand::env(&path)
+            .map_err(|e| format!("Failed to expand path: {}", e))?;
+        Ok(expanded.to_string())
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        // On Unix-like systems, expand ~ and environment variables
+        let expanded = shellexpand::full(&path)
+            .map_err(|e| format!("Failed to expand path: {}", e))?;
+        Ok(expanded.to_string())
+    }
+}
+
+/// Open a directory in the system's file explorer
+#[tauri::command]
+pub async fn open_directory(path: String) -> std::result::Result<(), String> {
+    // First expand any environment variables in the path
+    let expanded_path = {
+        #[cfg(target_os = "windows")]
+        {
+            shellexpand::env(&path)
+                .map_err(|e| format!("Failed to expand path: {}", e))?
+                .to_string()
+        }
+        
+        #[cfg(not(target_os = "windows"))]
+        {
+            shellexpand::full(&path)
+                .map_err(|e| format!("Failed to expand path: {}", e))?
+                .to_string()
+        }
+    };
+    
+    let path_buf = PathBuf::from(&expanded_path);
+    
+    // Check if directory exists, if not create it
+    if !path_buf.exists() {
+        std::fs::create_dir_all(&path_buf)
+            .map_err(|e| format!("Failed to create directory: {}", e))?;
+    }
+    
+    if !path_buf.is_dir() {
+        return Err(format!("Path is not a directory: {}", expanded_path));
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        // Use explorer.exe on Windows
+        // CREATE_NO_WINDOW flag to prevent console window from appearing
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        
+        std::process::Command::new("explorer.exe")
+            .arg(&expanded_path)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&expanded_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&expanded_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+    
+    Ok(())
 }

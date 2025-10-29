@@ -13,6 +13,7 @@ mod platform;
 
 use std::sync::Arc;
 use commands::AppState;
+use core::OperationManager;
 use db::DbState;
 use utils::get_db_path;
 
@@ -24,10 +25,16 @@ fn main() {
     let db_path = get_db_path().expect("Failed to get database path");
     let db = Arc::new(DbState::new(db_path).expect("Failed to initialize database"));
 
+    // Initialize operation manager
+    let operation_manager = OperationManager::new();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState { db })
+        .manage(AppState { 
+            db,
+            operation_manager,
+        })
         .invoke_handler(tauri::generate_handler![
             commands::check_system_ready,
             commands::get_installations,
@@ -42,6 +49,12 @@ fn main() {
             commands::get_all_settings,
             commands::cancel_operation,
             commands::get_repository_size,
+            commands::check_for_updates,
+            commands::update_game,
+            commands::verify_installation,
+            commands::repair_installation,
+            commands::expand_path,
+            commands::open_directory,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

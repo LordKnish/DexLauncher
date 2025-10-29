@@ -34,7 +34,7 @@ impl GitHubApi {
     /// Create a new GitHub API client
     pub fn new(owner: impl Into<String>, repo: impl Into<String>) -> Result<Self> {
         let client = Client::builder()
-            .user_agent("Pokemon-Fusion-Launcher/0.1.0")
+            .user_agent("DexLauncher/0.1.0")
             .timeout(std::time::Duration::from_secs(30))
             .build()
             .map_err(|e| LauncherError::GitHub(format!("Failed to create HTTP client: {}", e)))?;

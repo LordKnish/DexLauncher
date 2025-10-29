@@ -56,6 +56,7 @@ interface VersionData {
     id: string
     name: string
     logo: string
+    save_files_path?: string
     versions: Array<{
       version: string
       date: string
@@ -344,6 +345,12 @@ export function LauncherPage() {
               progress={progress}
               isLatestVersion={isLatestVersion}
               statusMessage={statusMessage || undefined}
+              installPath={
+                currentInstallationId !== null
+                  ? installations.find((i) => i.id === currentInstallationId)?.install_path
+                  : undefined
+              }
+              saveFilesPath={currentGame?.save_files_path}
               onLaunch={handleLaunch}
               onInstall={handleInstall}
               onUpdate={handleUpdate}

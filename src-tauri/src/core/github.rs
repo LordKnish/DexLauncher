@@ -209,44 +209,54 @@ impl GitInstaller {
 
             // Read stderr for progress updates
             if let Some(stderr) = child.stderr.take() {
-                let reader = BufReader::new(stderr);
+                let mut reader = BufReader::new(stderr);
+                let mut buf = Vec::with_capacity(4096);
                 let mut last_percentage = 0u64;
-                
-                for line in reader.lines() {
-                    if let Ok(line) = line {
-                        tracing::debug!("Git: {}", line);
-                        
-                        // Parse progress from git output (e.g., "Receiving objects: 10% (1024/10240)")
-                        if let Some(percentage) = Self::parse_git_progress(&line) {
-                            // Only emit if percentage changed (avoid spam)
-                            if percentage != last_percentage {
-                                last_percentage = percentage;
-                                
-                                // Map git's 0-100% to our start-end range
-                                let mapped_progress = start_progress + 
-                                    ((end_progress - start_progress) * percentage / 100);
-                                
-                                // Create clean status message based on what git is doing
-                                let status_message = if line.contains("Receiving objects") {
-                                    format!("Downloading files: {}%", percentage)
-                                } else if line.contains("Resolving deltas") {
-                                    format!("Processing files: {}%", percentage)
-                                } else if line.contains("Compressing objects") {
-                                    format!("Preparing download: {}%", percentage)
-                                } else if line.contains("Counting objects") {
-                                    format!("Counting objects: {}%", percentage)
-                                } else {
-                                    format!("Progress: {}%", percentage)
-                                };
-                                
-                                // Emit progress event with clean message
-                                let _ = self.emit_progress(
-                                    operation_id,
-                                    "downloading",
-                                    mapped_progress as f64,
-                                    &status_message
-                                );
-                            }
+
+                loop {
+                    buf.clear();
+                    // progress frames end with '\r'. fall back to '\n' at process end
+                    let read_res = reader.read_until(b'\r', &mut buf);
+                    let n = match read_res {
+                        Ok(n) if n > 0 => n,
+                        Ok(_) => {
+                            // try to drain any final line
+                            let _ = reader.read_until(b'\n', &mut buf);
+                            if buf.is_empty() { break; }
+                            buf.len()
+                        }
+                        Err(_) => break,
+                    };
+
+                    let mut s = String::from_utf8_lossy(&buf[..n]).to_string();
+                    // trim carriage return and newline
+                    s.retain(|c| c != '\r' && c != '\n');
+                    // strip very simple ANSI sequences
+                    s = s.replace("\u{001b}[K", "").replace("\u{001b}[2K", "");
+
+                    if s.is_empty() {
+                        continue;
+                    }
+                    tracing::debug!("Git: {}", s);
+
+                    if let Some(percentage) = Self::parse_git_progress(&s) {
+                        if percentage != last_percentage {
+                            last_percentage = percentage;
+                            let mapped = start_progress + ((end_progress - start_progress) * percentage / 100);
+
+                            let status_message = if s.contains("Receiving objects") {
+                                format!("Downloading files: {}%", percentage)
+                            } else if s.contains("Resolving deltas") {
+                                format!("Processing files: {}%", percentage)
+                            } else if s.contains("Compressing objects") {
+                                format!("Preparing download: {}%", percentage)
+                            } else if s.contains("Counting objects") {
+                                format!("Counting objects: {}%", percentage)
+                            } else {
+                                format!("Progress: {}%", percentage)
+                            };
+
+                            let _ = self.emit_progress(operation_id, "downloading", mapped as f64, &status_message);
                         }
                     }
                 }
@@ -291,16 +301,17 @@ impl GitInstaller {
 
     /// Parse git progress percentage from output line
     fn parse_git_progress(line: &str) -> Option<u64> {
-        // Look for patterns like "Receiving objects: 10%" or "Resolving deltas: 50%"
-        if let Some(pos) = line.find('%') {
-            // Search backwards from % to find the number
-            let before_percent = &line[..pos];
-            if let Some(last_space) = before_percent.rfind(|c: char| !c.is_numeric()) {
-                let num_str = &before_percent[last_space + 1..];
-                return num_str.parse::<u64>().ok();
-            }
-        }
-        None
+        // find the last '%' and read contiguous digits before it
+        let bytes = line.as_bytes();
+        let pos = bytes.iter().rposition(|&b| b == b'%')?;
+        let mut i = pos;
+        // skip spaces
+        while i > 0 && bytes[i - 1].is_ascii_whitespace() { i -= 1; }
+        // collect digits
+        let mut j = i;
+        while j > 0 && bytes[j - 1].is_ascii_digit() { j -= 1; }
+        if j == i { return None; }
+        line[j..i].parse::<u64>().ok().filter(|n| *n <= 100)
     }
 
     /// Check if git is available

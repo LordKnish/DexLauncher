@@ -32,7 +32,7 @@ impl Downloader {
         })?;
 
         // Set user agent
-        easy.useragent("Pokemon-Fusion-Launcher/0.1.0").map_err(|e| {
+        easy.useragent("DexLauncher/0.1.0").map_err(|e| {
             LauncherError::Network(format!("Failed to set user agent: {}", e))
         })?;
 
@@ -156,7 +156,7 @@ impl Downloader {
             })?;
 
             // Set user agent
-            easy.useragent("Pokemon-Fusion-Launcher/0.1.0").map_err(|e| {
+            easy.useragent("DexLauncher/0.1.0").map_err(|e| {
                 LauncherError::Network(format!("Failed to set user agent: {}", e))
             })?;
 

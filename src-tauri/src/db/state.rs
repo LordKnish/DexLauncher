@@ -170,6 +170,16 @@ impl DbState {
         Ok(())
     }
 
+    /// Update installation version
+    pub fn update_installation_version(&self, id: i64, version: &str) -> Result<()> {
+        let conn = self.get_conn()?;
+        conn.execute(
+            "UPDATE installations SET version = ?1, is_valid = 1 WHERE id = ?2",
+            params![version, id],
+        )?;
+        Ok(())
+    }
+
     /// Update last played time
     pub fn update_last_played(&self, id: i64) -> Result<()> {
         let conn = self.get_conn()?;
@@ -228,6 +238,34 @@ impl DbState {
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(files)
+    }
+
+    /// Clear installation files
+    pub fn clear_installation_files(&self, installation_id: i64) -> Result<()> {
+        let conn = self.get_conn()?;
+        conn.execute(
+            "DELETE FROM installation_files WHERE installation_id = ?1",
+            params![installation_id],
+        )?;
+        Ok(())
+    }
+
+    /// Update installation file hash
+    pub fn update_installation_file_hash(
+        &self,
+        installation_id: i64,
+        file_path: &str,
+        hash: &str,
+        size_bytes: u64,
+    ) -> Result<()> {
+        let conn = self.get_conn()?;
+        conn.execute(
+            "UPDATE installation_files 
+             SET hash = ?1, size_bytes = ?2
+             WHERE installation_id = ?3 AND file_path = ?4",
+            params![hash, size_bytes as i64, installation_id, file_path],
+        )?;
+        Ok(())
     }
 
     // ===== Settings Methods =====

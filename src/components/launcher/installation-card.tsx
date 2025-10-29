@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Rocket, Trash2, Download, Loader2, Settings } from "lucide-react"
+import { Rocket, Trash2, Download, Loader2, Settings, FolderOpen } from "lucide-react"
+import { invoke } from "@tauri-apps/api/core"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -37,6 +38,8 @@ interface InstallationCardProps {
   progress?: number
   statusMessage?: string
   isLatestVersion?: boolean
+  installPath?: string
+  saveFilesPath?: string
   onLaunch?: () => void
   onInstall?: () => void
   onUpdate?: () => void
@@ -53,6 +56,8 @@ export function InstallationCard({
   progress = 0,
   statusMessage,
   isLatestVersion = true,
+  installPath,
+  saveFilesPath,
   onLaunch,
   onInstall,
   onUpdate,
@@ -66,6 +71,33 @@ export function InstallationCard({
   const isInstalling =
     status === "downloading" || status === "extracting" || status === "verifying"
   const hasError = status === "error"
+
+  const handleOpenGameFiles = async () => {
+    if (!installPath) {
+      console.error("No install path available")
+      return
+    }
+    
+    try {
+      await invoke("open_directory", { path: installPath })
+    } catch (err) {
+      console.error("Failed to open game files:", err)
+    }
+  }
+
+  const handleOpenSaveFiles = async () => {
+    if (!saveFilesPath) {
+      console.error("No save files path configured")
+      return
+    }
+    
+    try {
+      // open_directory will handle path expansion internally
+      await invoke("open_directory", { path: saveFilesPath })
+    } catch (err) {
+      console.error("Failed to open save files:", err)
+    }
+  }
 
   return (
     <Card className={cn("animate-fade-in-up backdrop-blur-sm", className)}>
@@ -88,17 +120,42 @@ export function InstallationCard({
                   <DialogHeader>
                     <DialogTitle>Game Settings</DialogTitle>
                     <DialogDescription>
-                      Select a version to play
+                      Manage game files and select version
                     </DialogDescription>
                   </DialogHeader>
-                  <VersionSelector
-                    versions={versions}
-                    currentVersion={version}
-                    onVersionSelect={(v) => {
-                      onVersionSelect(v)
-                      setSettingsOpen(false)
-                    }}
-                  />
+                  
+                  <div className="space-y-4">
+                    {/* Folder Buttons */}
+                    {isInstalled && (
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Game Directories</div>
+                        <div className="grid gap-2">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={handleOpenGameFiles}
+                            disabled={!installPath}
+                          >
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            Open Game Files
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Version Selector */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium">Version Selection</div>
+                      <VersionSelector
+                        versions={versions}
+                        currentVersion={version}
+                        onVersionSelect={(v) => {
+                          onVersionSelect(v)
+                          setSettingsOpen(false)
+                        }}
+                      />
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             )}
