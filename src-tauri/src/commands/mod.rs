@@ -154,6 +154,37 @@ pub async fn remove_from_steam(
     Ok(result.message)
 }
 
+/// Install Steam grid artwork (manual installation)
+#[tauri::command]
+pub async fn install_steam_artwork(
+    install_path: String,
+) -> std::result::Result<String, String> {
+    use crate::core::SteamIntegration;
+    use crate::utils::SteamArtwork;
+    
+    tracing::info!("Manual Steam artwork installation requested");
+    
+    let steam = SteamIntegration::new().map_err(|e| e.to_string())?;
+    let path = PathBuf::from(&install_path);
+    let exe_path = path.join("InfiniteFusion.exe");
+    
+    // Generate artwork from embedded assets
+    let artwork = SteamArtwork::generate().map_err(|e| e.to_string())?;
+    
+    // Install artwork to Steam
+    steam
+        .install_grid_art(
+            "Pokémon Infinite Fusion",
+            &exe_path,
+            Some(&artwork.grid_jpeg),
+            Some(&artwork.hero_jpeg),
+            Some(&artwork.logo_png),
+        )
+        .map_err(|e| e.to_string())?;
+    
+    Ok("Steam artwork installed successfully".to_string())
+}
+
 /// Check if Steam is installed and running
 #[tauri::command]
 pub async fn check_steam_status() -> std::result::Result<crate::core::steam::SteamRunningState, String> {

@@ -58,6 +58,7 @@ fn main() {
             commands::add_to_steam,
             commands::check_steam_shortcut,
             commands::remove_from_steam,
+            commands::install_steam_artwork,
             commands::check_steam_status,
             commands::close_steam,
         ])

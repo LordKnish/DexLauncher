@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::{GitHubApi, GameLauncher, Verifier, GitInstaller, GitHubRepo, SteamIntegration};
 use crate::db::DbState;
 use crate::error::{LauncherError, Result};
-use crate::utils::get_dir_size;
+use crate::utils::{get_dir_size, SteamArtwork};
 use crate::platform::{create_desktop_shortcut, create_start_menu_shortcut, remove_desktop_shortcut, remove_start_menu_shortcut};
 
 /// Installation progress event
@@ -369,12 +369,26 @@ impl Installer {
     /// Install Steam grid art
     async fn install_steam_grid_art(
         &self,
-        _steam: &SteamIntegration,
-        _game_exe: &PathBuf,
+        steam: &SteamIntegration,
+        game_exe: &PathBuf,
     ) -> Result<()> {
-        // TODO: Load and convert banner.png and logo.png to appropriate formats
-        // For now, skip grid art installation
-        tracing::info!("Grid art installation not yet implemented");
+        tracing::info!("Generating Steam artwork from embedded assets...");
+        
+        // Generate artwork from embedded assets
+        let artwork = SteamArtwork::generate()?;
+        
+        tracing::info!("Installing Steam grid art...");
+        
+        // Install artwork to Steam
+        steam.install_grid_art(
+            "Pokémon Infinite Fusion",
+            game_exe,
+            Some(&artwork.grid_jpeg),
+            Some(&artwork.hero_jpeg),
+            Some(&artwork.logo_png),
+        )?;
+        
+        tracing::info!("✓ Steam grid art installed successfully");
         Ok(())
     }
 
