@@ -4,10 +4,10 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 use serde::{Deserialize, Serialize};
 
-use crate::core::{Downloader, Extractor, GitHubApi, GameLauncher, Verifier, GitInstaller, GitHubRepo};
+use crate::core::{GitHubApi, GameLauncher, Verifier, GitInstaller, GitHubRepo, SteamIntegration};
 use crate::db::DbState;
 use crate::error::{LauncherError, Result};
-use crate::utils::{ProgressTracker, get_dir_size};
+use crate::utils::get_dir_size;
 use crate::platform::{create_desktop_shortcut, create_start_menu_shortcut, remove_desktop_shortcut, remove_start_menu_shortcut};
 
 /// Installation progress event
@@ -57,6 +57,7 @@ impl Installer {
         install_path: PathBuf,
         create_start_menu: bool,
         create_desktop: bool,
+        add_to_steam: bool,
     ) -> Result<i64> {
         tracing::info!("Starting installation: {} v{} to {}", game_id, version, install_path.display());
         
@@ -102,8 +103,31 @@ impl Installer {
         }
 
         // Calculate installation size
-        self.emit_progress(&operation_id, "finalizing", 95.0, "Calculating installation size...")?;
         let size_bytes = get_dir_size(&install_path).ok();
+
+        // Steam Integration (95% - 100%)
+        if add_to_steam {
+            self.emit_progress(&operation_id, "steam", 95.0, "Adding to Steam...")?;
+            
+            match self.add_to_steam_internal(&install_path, &operation_id).await {
+                Ok(message) => {
+                    tracing::info!("✓ Steam integration successful: {}", message);
+                    self.app_handle
+                        .emit("steam-success", message)
+                        .ok();
+                }
+                Err(e) => {
+                    tracing::warn!("Steam integration failed (non-fatal): {}", e);
+                    // Mark as pending for retry from settings
+                    let _ = self.db.set_setting("steam_pending", "true");
+                    self.app_handle
+                        .emit("steam-skipped", format!("Install finished. Add to Steam later via Settings. Error: {}", e))
+                        .ok();
+                }
+            }
+        }
+
+        self.emit_progress(&operation_id, "finalizing", 99.0, "Finalizing installation...")?;
 
         // Save to database
         tracing::info!("Saving installation to database...");
@@ -270,5 +294,96 @@ impl Installer {
             .map_err(|e| LauncherError::General(format!("Failed to emit error: {}", e)))?;
 
         Ok(())
+    }
+
+    /// Internal Steam integration logic
+    async fn add_to_steam_internal(
+        &self,
+        install_path: &PathBuf,
+        operation_id: &str,
+    ) -> Result<String> {
+        tracing::info!("=== STEAM INTEGRATION ===");
+        
+        // Create Steam integration manager
+        let steam = SteamIntegration::new()?;
+        
+        // Check if Steam is running
+        let state = steam.get_steam_state();
+        
+        if !state.steam_path.is_some() {
+            return Err(LauncherError::Steam("Steam not installed on this system".to_string()));
+        }
+
+        let steam_was_running = state.is_running;
+        
+        // If Steam is running, emit event to ask user
+        if steam_was_running {
+            tracing::info!("Steam is running, requesting user action...");
+            
+            // Emit event to frontend to show modal
+            self.app_handle
+                .emit("steam-running-prompt", ())
+                .map_err(|e| LauncherError::Steam(format!("Failed to emit steam-running event: {}", e)))?;
+            
+            // Wait for user response via a channel or setting
+            // For now, we'll skip if Steam is running (user can retry from settings)
+            return Err(LauncherError::Steam("Steam is running. Please close Steam and try again from Settings.".to_string()));
+        }
+
+        self.emit_progress(operation_id, "steam", 96.0, "Writing Steam shortcuts...")?;
+
+        // Add to Steam
+        let game_exe = install_path.join("InfiniteFusion.exe");
+        let icon_path = install_path.join("Game").join("Icon.ico");
+        let icon = if icon_path.exists() {
+            Some(icon_path)
+        } else {
+            None
+        };
+
+        let result = steam.add_to_steam(
+            "Pokémon Infinite Fusion",
+            &game_exe,
+            install_path,
+            icon.as_ref(),
+        )?;
+
+        self.emit_progress(operation_id, "steam", 98.5, "Installing Steam grid art...")?;
+
+        // Try to install grid art (non-fatal if it fails)
+        if let Err(e) = self.install_steam_grid_art(&steam, &game_exe).await {
+            tracing::warn!("Failed to install Steam grid art: {}", e);
+        }
+
+        // If we closed Steam, restart it
+        if steam_was_running {
+            self.emit_progress(operation_id, "steam", 99.5, "Restarting Steam...")?;
+            if let Err(e) = steam.restart_steam() {
+                tracing::warn!("Failed to restart Steam: {}", e);
+            }
+        }
+
+        Ok(result.message)
+    }
+
+    /// Install Steam grid art
+    async fn install_steam_grid_art(
+        &self,
+        _steam: &SteamIntegration,
+        _game_exe: &PathBuf,
+    ) -> Result<()> {
+        // TODO: Load and convert banner.png and logo.png to appropriate formats
+        // For now, skip grid art installation
+        tracing::info!("Grid art installation not yet implemented");
+        Ok(())
+    }
+
+    /// Add game to Steam (public method for manual retry)
+    pub async fn add_to_steam(
+        &self,
+        install_path: PathBuf,
+    ) -> Result<String> {
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        self.add_to_steam_internal(&install_path, &operation_id).await
     }
 }

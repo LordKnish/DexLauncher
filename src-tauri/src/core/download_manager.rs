@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use std::fs::File;
-use std::io::{Write, Seek, SeekFrom};
+use std::io::Write;
 use curl::easy::Easy;
 use tauri::{AppHandle, Emitter};
 use tokio_util::sync::CancellationToken;

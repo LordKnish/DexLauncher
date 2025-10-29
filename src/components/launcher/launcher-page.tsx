@@ -220,7 +220,8 @@ export function LauncherPage() {
   const handleInstallConfirm = async (
     installPath: string,
     createStartMenu: boolean,
-    createDesktop: boolean
+    createDesktop: boolean,
+    addToSteam: boolean
   ) => {
     try {
       // Generate operation ID
@@ -238,6 +239,7 @@ export function LauncherPage() {
         installPath,
         createStartMenu,
         createDesktop,
+        addToSteam,
       })
 
       console.log("Installation started with ID:", installationId)

@@ -43,7 +43,7 @@ fn get_disk_space_windows(path: &PathBuf) -> Result<DiskSpaceInfo> {
     };
     
     // Convert to wide string for Windows API
-    let mut root_wide: Vec<u16> = OsStr::new(&root)
+    let root_wide: Vec<u16> = OsStr::new(&root)
         .encode_wide()
         .chain(std::iter::once(0))
         .collect();

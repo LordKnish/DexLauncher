@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::io::Read;
 use zip::ZipArchive;
 
 use crate::error::{LauncherError, Result};

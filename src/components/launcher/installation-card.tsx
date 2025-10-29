@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Rocket, Trash2, Download, Loader2, Settings, FolderOpen } from "lucide-react"
 import { invoke } from "@tauri-apps/api/core"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { VersionSelector } from "./version-selector"
+import { useToast } from "@/components/ui/use-toast"
 import {
   Dialog,
   DialogContent,
@@ -67,10 +68,72 @@ export function InstallationCard({
   className,
 }: InstallationCardProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [isInSteam, setIsInSteam] = useState(false)
+  const [steamLoading, setSteamLoading] = useState(false)
+  const { toast } = useToast()
   const isInstalled = status === "installed"
   const isInstalling =
     status === "downloading" || status === "extracting" || status === "verifying"
   const hasError = status === "error"
+
+  // Check Steam status when settings dialog opens
+  useEffect(() => {
+    if (settingsOpen && isInstalled && installPath) {
+      checkSteamStatus()
+    }
+  }, [settingsOpen, isInstalled, installPath])
+
+  const checkSteamStatus = async () => {
+    if (!installPath) return
+    
+    try {
+      const inSteam = await invoke<boolean>("check_steam_shortcut", {
+        installPath,
+      })
+      setIsInSteam(inSteam)
+    } catch (err) {
+      console.error("Failed to check Steam status:", err)
+      setIsInSteam(false)
+    }
+  }
+
+  const handleSteamToggle = async () => {
+    if (!installPath) return
+    
+    setSteamLoading(true)
+    try {
+      if (isInSteam) {
+        // Remove from Steam
+        const message = await invoke<string>("remove_from_steam", {
+          installPath,
+        })
+        setIsInSteam(false)
+        toast({
+          title: "Removed from Steam",
+          description: message,
+        })
+      } else {
+        // Add to Steam
+        const message = await invoke<string>("add_to_steam", {
+          installPath,
+        })
+        setIsInSteam(true)
+        toast({
+          title: "Added to Steam",
+          description: message,
+        })
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      toast({
+        title: isInSteam ? "Failed to remove from Steam" : "Failed to add to Steam",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setSteamLoading(false)
+    }
+  }
 
   const handleOpenGameFiles = async () => {
     if (!installPath) {
@@ -140,6 +203,30 @@ export function InstallationCard({
                             Open Game Files
                           </Button>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Steam Integration */}
+                    {isInstalled && (
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Steam Integration</div>
+                        <Button
+                          variant={isInSteam ? "destructive" : "default"}
+                          className="w-full"
+                          onClick={handleSteamToggle}
+                          disabled={steamLoading || !installPath}
+                        >
+                          {steamLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {isInSteam ? "Removing..." : "Adding..."}
+                            </>
+                          ) : (
+                            <>
+                              {isInSteam ? "Remove from Steam" : "Add to Steam"}
+                            </>
+                          )}
+                        </Button>
                       </div>
                     )}
                     

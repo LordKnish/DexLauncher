@@ -6,7 +6,7 @@ use crate::error::{LauncherError, Result};
 pub fn create_shortcut(
     target_path: &PathBuf,
     shortcut_path: &PathBuf,
-    description: &str,
+    _description: &str,
     working_dir: Option<&PathBuf>,
 ) -> Result<()> {
     tracing::info!("Creating shortcut: {} -> {}", shortcut_path.display(), target_path.display());

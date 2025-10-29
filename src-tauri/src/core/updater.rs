@@ -5,7 +5,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::error::{LauncherError, Result};
 use crate::db::DbState;
-use crate::core::{GitHubApi, GitHubRelease, Verifier};
+use crate::core::{GitHubApi, Verifier};
 
 /// Update information
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

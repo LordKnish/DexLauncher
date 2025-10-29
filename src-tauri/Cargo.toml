@@ -39,6 +39,9 @@ chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3"
 uuid = { version = "1", features = ["v4"] }
 shellexpand = "3"
+sysinfo = "0.31"
+steam_shortcuts_util = "1.0"
+crc32fast = "1.4"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

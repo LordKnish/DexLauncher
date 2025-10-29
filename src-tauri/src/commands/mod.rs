@@ -93,14 +93,82 @@ pub async fn install_game(
     install_path: String,
     create_start_menu: bool,
     create_desktop: bool,
+    add_to_steam: bool,
 ) -> std::result::Result<i64, String> {
     let installer = Installer::new(Arc::clone(&state.db), app);
     let path = PathBuf::from(install_path);
     
     installer
-        .install_game(operation_id, game_id, version, path, create_start_menu, create_desktop)
+        .install_game(operation_id, game_id, version, path, create_start_menu, create_desktop, add_to_steam)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Add game to Steam (manual retry)
+#[tauri::command]
+pub async fn add_to_steam(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    install_path: String,
+) -> std::result::Result<String, String> {
+    let installer = Installer::new(Arc::clone(&state.db), app);
+    let path = PathBuf::from(install_path);
+    
+    installer
+        .add_to_steam(path)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Check if game is in Steam shortcuts
+#[tauri::command]
+pub async fn check_steam_shortcut(
+    install_path: String,
+) -> std::result::Result<bool, String> {
+    use crate::core::SteamIntegration;
+    
+    let steam = SteamIntegration::new().map_err(|e| e.to_string())?;
+    let path = PathBuf::from(&install_path);
+    let exe_path = path.join("InfiniteFusion.exe");
+    
+    steam
+        .is_in_steam("Pokémon Infinite Fusion", &exe_path)
+        .map_err(|e| e.to_string())
+}
+
+/// Remove game from Steam shortcuts
+#[tauri::command]
+pub async fn remove_from_steam(
+    install_path: String,
+) -> std::result::Result<String, String> {
+    use crate::core::SteamIntegration;
+    
+    let steam = SteamIntegration::new().map_err(|e| e.to_string())?;
+    let path = PathBuf::from(&install_path);
+    let exe_path = path.join("InfiniteFusion.exe");
+    
+    let result = steam
+        .remove_from_steam("Pokémon Infinite Fusion", &exe_path)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(result.message)
+}
+
+/// Check if Steam is installed and running
+#[tauri::command]
+pub async fn check_steam_status() -> std::result::Result<crate::core::steam::SteamRunningState, String> {
+    use crate::core::SteamIntegration;
+    
+    let steam = SteamIntegration::new().map_err(|e| e.to_string())?;
+    Ok(steam.get_steam_state())
+}
+
+/// Close Steam (for Steam integration)
+#[tauri::command]
+pub async fn close_steam() -> std::result::Result<bool, String> {
+    use crate::core::SteamIntegration;
+    
+    SteamIntegration::close_steam().map_err(|e| e.to_string())
 }
 
 /// Launch a game

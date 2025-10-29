@@ -18,7 +18,7 @@ interface InstallDirectoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   gameName: string
-  onConfirm: (path: string, createStartMenu: boolean, createDesktop: boolean) => void
+  onConfirm: (path: string, createStartMenu: boolean, createDesktop: boolean, addToSteam: boolean) => void
 }
 
 export function InstallDirectoryDialog({
@@ -33,6 +33,7 @@ export function InstallDirectoryDialog({
   const [installPath, setInstallPath] = useState(defaultPath)
   const [createStartMenu, setCreateStartMenu] = useState(true)
   const [createDesktop, setCreateDesktop] = useState(true)
+  const [addToSteam, setAddToSteam] = useState(true)
   const [repositorySize, setRepositorySize] = useState<number | null>(null)
   const [loadingSize, setLoadingSize] = useState(false)
 
@@ -78,7 +79,7 @@ export function InstallDirectoryDialog({
   }
 
   const handleConfirm = () => {
-    onConfirm(installPath, createStartMenu, createDesktop)
+    onConfirm(installPath, createStartMenu, createDesktop, addToSteam)
     onOpenChange(false)
   }
 
@@ -145,6 +146,19 @@ export function InstallDirectoryDialog({
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
                 Create Desktop Shortcut
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="add-to-steam"
+                checked={addToSteam}
+                onCheckedChange={(checked) => setAddToSteam(checked as boolean)}
+              />
+              <label
+                htmlFor="add-to-steam"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Add to Steam
               </label>
             </div>
           </div>
