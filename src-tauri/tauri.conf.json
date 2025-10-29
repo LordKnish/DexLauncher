@@ -30,6 +30,17 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/LordKnish/DexLauncher/releases/latest/download/latest.json"
+      ],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxMjU2NUFCMEMzRDlGQUIKUldTcm56ME1xMlVsWWRGV2krNCtyaWp5R05ucHdnMUFFSkhRaVJzMnl3TVNhd3k0SVNwQlNRZ1oK",
+      "windows": {
+        "installMode": "passive"
+      }
     }
   },
   "bundle": {

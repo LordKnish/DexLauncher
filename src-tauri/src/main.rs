@@ -13,7 +13,7 @@ mod platform;
 
 use std::sync::Arc;
 use commands::AppState;
-use core::OperationManager;
+use core::{OperationManager, LauncherUpdater};
 use db::DbState;
 use utils::get_db_path;
 
@@ -31,6 +31,12 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            // Start background update checker
+            LauncherUpdater::start_background_checker(app.handle().clone());
+            Ok(())
+        })
         .manage(AppState { 
             db,
             operation_manager,
@@ -61,6 +67,9 @@ fn main() {
             commands::install_steam_artwork,
             commands::check_steam_status,
             commands::close_steam,
+            core::check_launcher_update,
+            core::install_launcher_update,
+            core::restart_launcher,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -43,6 +43,7 @@ sysinfo = "0.31"
 steam_shortcuts_util = "1.0"
 crc32fast = "1.4"
 image = "0.25"
+tauri-plugin-updater = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

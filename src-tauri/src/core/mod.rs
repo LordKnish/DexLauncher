@@ -9,6 +9,7 @@ pub mod launcher;
 pub mod operation_manager;
 pub mod updater;
 pub mod steam;
+pub mod launcher_updater;
 
 pub use github::*;
 pub use github_api::*;
@@ -18,3 +19,4 @@ pub use launcher::*;
 pub use operation_manager::*;
 pub use updater::*;
 pub use steam::*;
+pub use launcher_updater::*;

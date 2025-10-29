@@ -27,6 +27,11 @@ dist-ssr
 src-tauri/target
 src-tauri/WixTools
 
+# Tauri Updater - CRITICAL: Never commit private signing keys!
+.tauri/
+*.key
+!*.key.pub
+
 # Build artifacts
 *.exe
 *.msi

@@ -21,6 +21,8 @@ pub enum LauncherError {
     Git(String),
     /// Steam integration errors
     Steam(String),
+    /// Launcher update errors
+    Update(String),
     /// Not found errors
     NotFound(String),
     /// Operation cancelled
@@ -41,6 +43,7 @@ impl fmt::Display for LauncherError {
             LauncherError::GitHub(msg) => write!(f, "GitHub API error: {}", msg),
             LauncherError::Git(msg) => write!(f, "Git error: {}", msg),
             LauncherError::Steam(msg) => write!(f, "Steam integration error: {}", msg),
+            LauncherError::Update(msg) => write!(f, "Update error: {}", msg),
             LauncherError::NotFound(msg) => write!(f, "Not found: {}", msg),
             LauncherError::Cancelled => write!(f, "Operation cancelled"),
             LauncherError::General(msg) => write!(f, "{}", msg),
